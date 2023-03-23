@@ -91,37 +91,39 @@ void rat::Engine::Render()
 
 void rat::Engine::DrawRect(const Transform& transform, bool fill)
 {
-
+	DrawRect(transform.position.x, transform.position.y, transform.size.width, transform.size.height, fill);
 }
 
 void rat::Engine::DrawRect(const Position& position, const Size& size, bool fill)
 {
-
+	DrawRect(position.x, position.y, size.width, size.height, fill);
 }
 
 void rat::Engine::DrawRect(int x, int y, int width, int height, bool fill)
 {
+	SDL_Rect rect{ x, y, width, height };
 
+	fill ? SDL_RenderFillRect(ptr_Renderer, &rect) : SDL_RenderDrawRect(ptr_Renderer, &rect);
 }
 
 void rat::Engine::DrawGlyph(const Glyph& glyph, const Position& position)
 {
-
+	DrawGlyph(glyph.index, glyph.color.r, glyph.color.g, glyph.color.b, glyph.color.a, position.x, position.y);
 }
 
 void rat::Engine::DrawGlyph(int index, const Color& color, const Position& position)
 {
-
+	DrawGlyph(index, color.r, color.g, color.b, color.a, position.x, position.y);
 }
 
 void rat::Engine::DrawGlyph(int index, int r, int g, int b, int a, const Position& position)
 {
-
+	DrawGlyph(index, r, g, b, a, position.x, position.y);
 }
 
 void rat::Engine::DrawGlyph(int index, int r, int g, int b, int a, int x, int y)
 {
-
+	DrawGlyph(index, r, g, b, a, x, y);
 }
 
 void rat::Engine::DrawText(const std::string& text, const Position& position, const TextAlignment& alignment, const Color& color)

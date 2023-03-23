@@ -1,58 +1,61 @@
 #pragma once
 
-struct Position
+namespace rat
 {
-	int x;
-	int y;
+	struct Position
+	{
+		int x;
+		int y;
 
-	int length() const;
-};
+		int length() const;
+	};
 
-struct Size
-{
-	int width;
-	int height;
+	struct Size
+	{
+		int width;
+		int height;
 
-	int area() const { return width * height; }
+		int area() const;
 
-	Size operator*(const Size& size) const { return { width * size.width, height * size.height }; }
-};
+		Size operator*(const Size& size) const;
+	};
 
-struct Transform
-{
-	Position position;
-	Size size;
-};
+	struct Transform
+	{
+		Position position;
+		Size size;
+	};
 
-struct Color
-{
-	int r, g, b, a;
-};
+	struct Color
+	{
+		int r, g, b, a;
+	};
 
-struct Glyph
-{
-	int index;
-	Color color;
-};
+	struct Glyph
+	{
+		int index;
+		Color color;
+	};
 
-enum class VerticalAlignment
-{
-	Center,
-	Upper,
-	Lower
-};
+	enum class VerticalAlignment
+	{
+		Center,
+		Upper,
+		Lower
+	};
 
-enum class HorizontalAlignment
-{
-	Center,
-	Left,
-	Right
-};
+	enum class HorizontalAlignment
+	{
+		Center,
+		Left,
+		Right
+	};
 
-struct TextAlignment
-{
-	VerticalAlignment vertical;
-	HorizontalAlignment horizontal;
+	struct TextAlignment
+	{
+		VerticalAlignment vertical;
+		HorizontalAlignment horizontal;
 
-	auto alignment() const { return (int)vertical | (int)horizontal; }
-};
+		auto alignment() const;
+	};
+}
