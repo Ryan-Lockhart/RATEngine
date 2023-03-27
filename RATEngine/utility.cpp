@@ -4,11 +4,17 @@
 
 namespace rat
 {
-    inline int Position::length() const { return (int)sqrt(pow(x, 2) + pow(y, 2)); }
+    inline int32_t Position::length() const { return (int)sqrt(pow(x, 2) + pow(y, 2)); }
 
-    inline int rat::Size::area() const { return width * height; }
+    Position Position::magnitude() const
+    {
+        int32_t len = length();
+        return Position { x / len, y / len };
+    }
 
-    inline Size Size::operator*(const rat::Size& size) const { return { width * size.width, height * size.height }; }
+    inline uint16_t Size::perimeter() const { return width * 2 + height * 2; }
 
-    auto TextAlignment::alignment() const { return (int)vertical | (int)horizontal; }
+    inline uint16_t rat::Size::area() const { return width * height; }
+
+    inline auto TextAlignment::alignment() const { return (int)vertical | (int)horizontal; }
 }

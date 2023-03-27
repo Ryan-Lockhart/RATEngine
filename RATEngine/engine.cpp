@@ -2,32 +2,40 @@
 #include "glyph_set.hpp"
 
 rat::Engine::Engine(const Size& gridSize, const std::string& path, const Size& glyphSize) :
-	m_Fullscreen(false), m_WindowSize(gridSize * glyphSize), m_GlyphSize(glyphSize), m_GridSize(gridSize), ptr_Window(nullptr), ptr_Renderer(nullptr), ptr_GlyphSet(nullptr)
+	m_Fullscreen(false), m_GridSize(gridSize), ptr_Window(nullptr), ptr_Renderer(nullptr), ptr_GlyphSet(nullptr)
 {
 	if (SDL_Init(SDL_INIT_VIDEO) < 0)
-		throw (SDL_GetError());
+		throw (std::exception(SDL_GetError()));
 	else
 	{
 		if (IMG_Init(IMG_INIT_PNG) < 0)
-			throw (SDL_GetError());
+			throw (std::exception(SDL_GetError()));
 		else
 		{
-			ptr_Window = SDL_CreateWindow("RAT Engine", SDL_WINDOWPOS_CENTERED, SDL_WINDOWPOS_CENTERED, m_WindowSize.width, m_WindowSize.height, SDL_WINDOW_SHOWN | SDL_WINDOW_ALWAYS_ON_TOP | SDL_WINDOW_BORDERLESS);
+			ptr_Window = SDL_CreateWindow
+			(
+				"RAT Engine",
+				SDL_WINDOWPOS_CENTERED,
+				SDL_WINDOWPOS_CENTERED,
+				m_GridSize.width * glyphSize.width,
+				m_GridSize.height * glyphSize.height,
+				SDL_WINDOW_SHOWN | SDL_WINDOW_ALWAYS_ON_TOP | SDL_WINDOW_BORDERLESS
+			);
 
 			if (ptr_Window == nullptr)
-				throw (SDL_GetError());
+				throw (std::exception(SDL_GetError()));
 			else
 			{
 				ptr_Renderer = SDL_CreateRenderer(ptr_Window, -1, SDL_RENDERER_ACCELERATED);
 
 				if (ptr_Renderer == nullptr)
-					throw (SDL_GetError());
+					throw (std::exception(SDL_GetError()));
 				else
 				{
-					ptr_GlyphSet = new GlyphSet();
+					ptr_GlyphSet = new GlyphSet(ptr_Renderer, path, glyphSize);
 
 					if (ptr_GlyphSet == nullptr)
-						throw ("Glyph set failed to initialize!");
+						throw (std::exception("Glyph set failed to initialize!"));
 					else
 					{
 						bool exit = false;
@@ -69,7 +77,7 @@ rat::Engine::~Engine()
 	SDL_Quit();
 }
 
-void rat::Engine::Input(const SDL_Event& event)
+void rat::Engine::Input(const SDL_Keycode& code)
 {
 
 }
@@ -89,14 +97,24 @@ void rat::Engine::Render()
 	SDL_RenderPresent(ptr_Renderer);
 }
 
+void rat::Engine::SetDrawColor(const Color& color)
+{
+	SDL_SetRenderDrawColor(ptr_Renderer, color.r, color.g, color.b, color.a);
+	ptr_GlyphSet->SetDrawColor(color);
+}
+
 void rat::Engine::DrawRect(const Transform& transform, bool fill)
 {
-	DrawRect(transform.position.x, transform.position.y, transform.size.width, transform.size.height, fill);
+	SDL_Rect rect{ transform.position.x, transform.position.y, transform.size.width, transform.size.height };
+
+	fill ? SDL_RenderFillRect(ptr_Renderer, &rect) : SDL_RenderDrawRect(ptr_Renderer, &rect);
 }
 
 void rat::Engine::DrawRect(const Position& position, const Size& size, bool fill)
 {
-	DrawRect(position.x, position.y, size.width, size.height, fill);
+	SDL_Rect rect{ position.x, position.y, size.width, size.height };
+
+	fill ? SDL_RenderFillRect(ptr_Renderer, &rect) : SDL_RenderDrawRect(ptr_Renderer, &rect);
 }
 
 void rat::Engine::DrawRect(int x, int y, int width, int height, bool fill)
@@ -106,29 +124,38 @@ void rat::Engine::DrawRect(int x, int y, int width, int height, bool fill)
 	fill ? SDL_RenderFillRect(ptr_Renderer, &rect) : SDL_RenderDrawRect(ptr_Renderer, &rect);
 }
 
-void rat::Engine::DrawGlyph(const Glyph& glyph, const Position& position)
-{
-	DrawGlyph(glyph.index, glyph.color.r, glyph.color.g, glyph.color.b, glyph.color.a, position.x, position.y);
-}
-
-void rat::Engine::DrawGlyph(int index, const Color& color, const Position& position)
-{
-	DrawGlyph(index, color.r, color.g, color.b, color.a, position.x, position.y);
-}
-
-void rat::Engine::DrawGlyph(int index, int r, int g, int b, int a, const Position& position)
-{
-	DrawGlyph(index, r, g, b, a, position.x, position.y);
-}
-
-void rat::Engine::DrawGlyph(int index, int r, int g, int b, int a, int x, int y)
-{
-	DrawGlyph(index, r, g, b, a, x, y);
-}
-
 void rat::Engine::DrawText(const std::string& text, const Position& position, const TextAlignment& alignment, const Color& color)
 {
+	Position carriagePosition = position;
 
+	for (const char c : text)
+	{
+		switch (c)
+		{
+		case ' ':
+			carriagePosition.x++;
+			break;
+		case '\n':
+			carriagePosition.y--;
+			break;
+		case '\r':
+			carriagePosition.x = position.x;
+			break;
+		case '\t':
+			carriagePosition.x += carriagePosition.x % 4;
+			break;
+		case '\v':
+			carriagePosition.y -= carriagePosition.y % 4;
+			break;
+		default:
+			SetDrawColor(Color{ 0, 0, 0, 255 });
+			DrawRect(Transform{ carriagePosition, ptr_GlyphSet->GetSize() });
+
+			SetDrawColor(color);
+			ptr_GlyphSet->DrawGlyph((uint8_t)c, color, carriagePosition);
+			break;
+		}
+	}
 }
 
 void rat::Engine::DrawLabel(const std::string& text, const Position& position, const Size& padding, const TextAlignment& alignment, const Color& color)

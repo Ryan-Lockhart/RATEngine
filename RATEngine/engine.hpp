@@ -19,19 +19,16 @@ namespace rat
 
 		void ToggleFullscreen() { m_Fullscreen = !m_Fullscreen; }
 
-		virtual void Input(const SDL_Event& event);
+		virtual void Input(const SDL_Keycode& code);
 		virtual void Update();
 		virtual void Render();
 
 	protected:
+		void SetDrawColor(const Color& color);
+
 		void DrawRect(const Transform& transform, bool fill = false);
 		void DrawRect(const Position& position, const Size& size, bool fill = false);
 		void DrawRect(int x, int y, int width, int height, bool fill = false);
-
-		void DrawGlyph(const Glyph& glyph, const Position& position);
-		void DrawGlyph(int index, const Color& color, const Position& position);
-		void DrawGlyph(int index, int r, int g, int b, int a, const Position& position);
-		void DrawGlyph(int index, int r, int g, int b, int a, int x, int y);
 
 		void DrawText(const std::string& text, const Position& position, const TextAlignment& alignment, const Color& color);
 		void DrawLabel(const std::string& text, const Position& position, const Size& padding, const TextAlignment& alignment, const Color& color);
@@ -41,8 +38,6 @@ namespace rat
 
 		bool m_Fullscreen;
 
-		Size m_WindowSize;
-		Size m_GlyphSize;
 		Size m_GridSize;
 
 		SDL_Window* ptr_Window;
