@@ -72,15 +72,27 @@
   <PropertyGroup Label="UserMacros" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
     <LinkIncremental>true</LinkIncremental>
+    <IncludePath>C:\Users\rlockhart\OneDrive - Applied Manufacturing Technologies\Lockhart\cpp\dependecies\include;$(IncludePath)</IncludePath>
+    <LibraryPath>C:\Users\rlockhart\OneDrive - Applied Manufacturing Technologies\Lockhart\cpp\dependecies\lib\x86;$(LibraryPath)</LibraryPath>
+    <SourcePath>C:\Users\rlockhart\OneDrive - Applied Manufacturing Technologies\Lockhart\cpp\projects\RATEngine\RATEngine\src;$(SourcePath)</SourcePath>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
     <LinkIncremental>false</LinkIncremental>
+    <IncludePath>C:\Users\rlockhart\OneDrive - Applied Manufacturing Technologies\Lockhart\cpp\dependecies\include;$(IncludePath)</IncludePath>
+    <LibraryPath>C:\Users\rlockhart\OneDrive - Applied Manufacturing Technologies\Lockhart\cpp\dependecies\lib\x86;$(LibraryPath)</LibraryPath>
+    <SourcePath>C:\Users\rlockhart\OneDrive - Applied Manufacturing Technologies\Lockhart\cpp\projects\RATEngine\RATEngine\src;$(SourcePath)</SourcePath>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
     <LinkIncremental>true</LinkIncremental>
+    <IncludePath>C:\Users\rlockhart\OneDrive - Applied Manufacturing Technologies\Lockhart\cpp\dependecies\include;$(IncludePath)</IncludePath>
+    <LibraryPath>C:\Users\rlockhart\OneDrive - Applied Manufacturing Technologies\Lockhart\cpp\dependecies\lib\x64;$(LibraryPath)</LibraryPath>
+    <SourcePath>C:\Users\rlockhart\OneDrive - Applied Manufacturing Technologies\Lockhart\cpp\projects\RATEngine\RATEngine\src;$(SourcePath)</SourcePath>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
     <LinkIncremental>false</LinkIncremental>
+    <IncludePath>C:\Users\rlockhart\OneDrive - Applied Manufacturing Technologies\Lockhart\cpp\dependecies\include;$(IncludePath)</IncludePath>
+    <LibraryPath>C:\Users\rlockhart\OneDrive - Applied Manufacturing Technologies\Lockhart\cpp\dependecies\lib\x64;$(LibraryPath)</LibraryPath>
+    <SourcePath>C:\Users\rlockhart\OneDrive - Applied Manufacturing Technologies\Lockhart\cpp\projects\RATEngine\RATEngine\src;$(SourcePath)</SourcePath>
   </PropertyGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
     <ClCompile>
@@ -88,12 +100,16 @@
       <SDLCheck>true</SDLCheck>
       <PreprocessorDefinitions>WIN32;_DEBUG;_CONSOLE;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <ConformanceMode>true</ConformanceMode>
-      <AdditionalIncludeDirectories>E:\programming\SDL2-2.0.22\include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>C:\Users\rlockhart\OneDrive - Applied Manufacturing Technologies\Lockhart\cpp\projects\RATEngine\RATEngine\include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <LanguageStandard>stdcpp20</LanguageStandard>
+      <LanguageStandard_C>stdc17</LanguageStandard_C>
+      <EnforceTypeConversionRules>true</EnforceTypeConversionRules>
+      <EnableModules>true</EnableModules>
     </ClCompile>
     <Link>
       <SubSystem>Console</SubSystem>
       <GenerateDebugInformation>true</GenerateDebugInformation>
-      <AdditionalLibraryDirectories>E:\programming\SDL2-2.0.22\lib\x86;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
+      <AdditionalLibraryDirectories>C:\Users\rlockhart\OneDrive - Applied Manufacturing Technologies\Lockhart\cpp\dependecies\lib\x86\SDL2;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
       <AdditionalDependencies>SDL2.lib;SDL2_image.lib;SDL2main.lib;%(AdditionalDependencies)</AdditionalDependencies>
     </Link>
   </ItemDefinitionGroup>
@@ -105,14 +121,18 @@
       <SDLCheck>true</SDLCheck>
       <PreprocessorDefinitions>WIN32;NDEBUG;_CONSOLE;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <ConformanceMode>true</ConformanceMode>
-      <AdditionalIncludeDirectories>E:\programming\SDL2-2.0.22\include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>C:\Users\rlockhart\OneDrive - Applied Manufacturing Technologies\Lockhart\cpp\projects\RATEngine\RATEngine\include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <LanguageStandard>stdcpp20</LanguageStandard>
+      <LanguageStandard_C>stdc17</LanguageStandard_C>
+      <EnforceTypeConversionRules>true</EnforceTypeConversionRules>
+      <EnableModules>true</EnableModules>
     </ClCompile>
     <Link>
       <SubSystem>Windows</SubSystem>
       <EnableCOMDATFolding>true</EnableCOMDATFolding>
       <OptimizeReferences>true</OptimizeReferences>
       <GenerateDebugInformation>true</GenerateDebugInformation>
-      <AdditionalLibraryDirectories>E:\programming\SDL2-2.0.22\lib\x86;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
+      <AdditionalLibraryDirectories>C:\Users\rlockhart\OneDrive - Applied Manufacturing Technologies\Lockhart\cpp\dependecies\lib\x86\SDL2;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
       <AdditionalDependencies>SDL2.lib;SDL2_image.lib;SDL2main.lib;%(AdditionalDependencies)</AdditionalDependencies>
     </Link>
   </ItemDefinitionGroup>
@@ -122,12 +142,16 @@
       <SDLCheck>true</SDLCheck>
       <PreprocessorDefinitions>_DEBUG;_CONSOLE;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <ConformanceMode>true</ConformanceMode>
-      <AdditionalIncludeDirectories>E:\programming\SDL2-2.0.22\include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>C:\Users\rlockhart\OneDrive - Applied Manufacturing Technologies\Lockhart\cpp\projects\RATEngine\RATEngine\include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <LanguageStandard>stdcpp20</LanguageStandard>
+      <LanguageStandard_C>stdc17</LanguageStandard_C>
+      <EnforceTypeConversionRules>true</EnforceTypeConversionRules>
+      <EnableModules>true</EnableModules>
     </ClCompile>
     <Link>
       <SubSystem>Console</SubSystem>
       <GenerateDebugInformation>true</GenerateDebugInformation>
-      <AdditionalLibraryDirectories>E:\programming\SDL2-2.0.22\lib\x64;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
+      <AdditionalLibraryDirectories>C:\Users\rlockhart\OneDrive - Applied Manufacturing Technologies\Lockhart\cpp\dependecies\lib\x64\SDL2;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
       <AdditionalDependencies>SDL2.lib;SDL2_image.lib;SDL2main.lib;%(AdditionalDependencies)</AdditionalDependencies>
     </Link>
   </ItemDefinitionGroup>
@@ -139,39 +163,87 @@
       <SDLCheck>true</SDLCheck>
       <PreprocessorDefinitions>NDEBUG;_CONSOLE;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <ConformanceMode>true</ConformanceMode>
-      <AdditionalIncludeDirectories>E:\programming\SDL2-2.0.22\include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>C:\Users\rlockhart\OneDrive - Applied Manufacturing Technologies\Lockhart\cpp\projects\RATEngine\RATEngine\include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <LanguageStandard>stdcpp20</LanguageStandard>
+      <LanguageStandard_C>stdc17</LanguageStandard_C>
+      <EnforceTypeConversionRules>true</EnforceTypeConversionRules>
+      <EnableModules>true</EnableModules>
     </ClCompile>
     <Link>
       <SubSystem>Windows</SubSystem>
       <EnableCOMDATFolding>true</EnableCOMDATFolding>
       <OptimizeReferences>true</OptimizeReferences>
       <GenerateDebugInformation>true</GenerateDebugInformation>
-      <AdditionalLibraryDirectories>E:\programming\SDL2-2.0.22\lib\x64;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
+      <AdditionalLibraryDirectories>C:\Users\rlockhart\OneDrive - Applied Manufacturing Technologies\Lockhart\cpp\dependecies\lib\x64\SDL2;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
       <AdditionalDependencies>SDL2.lib;SDL2_image.lib;SDL2main.lib;%(AdditionalDependencies)</AdditionalDependencies>
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup>
-    <ClInclude Include="engine.hpp" />
-    <ClInclude Include="glyph_set.hpp" />
-    <ClInclude Include="utility.hpp" />
-  </ItemGroup>
-  <ItemGroup>
-    <ClCompile Include="engine.cpp" />
-    <ClCompile Include="glyph_set.cpp" />
-    <ClCompile Include="program.cpp" />
-    <ClCompile Include="utility.cpp" />
-  </ItemGroup>
-  <ItemGroup>
     <None Include="packages.config" />
+  </ItemGroup>
+  <ItemGroup>
+    <Image Include="assets\glyphs\glyphs_12x12.png">
+      <DeploymentContent Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">true</DeploymentContent>
+      <DeploymentContent Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">true</DeploymentContent>
+      <DeploymentContent Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">true</DeploymentContent>
+      <DeploymentContent Condition="'$(Configuration)|$(Platform)'=='Release|x64'">true</DeploymentContent>
+      <DeploymentContent>true</DeploymentContent>
+    </Image>
+    <Image Include="assets\glyphs\glyphs_8x8.png">
+      <DeploymentContent Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">true</DeploymentContent>
+      <DeploymentContent Condition="'$(Configuration)|$(Platform)'=='Release|x64'">true</DeploymentContent>
+      <DeploymentContent Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">true</DeploymentContent>
+      <DeploymentContent Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">true</DeploymentContent>
+      <DeploymentContent>true</DeploymentContent>
+    </Image>
+    <Image Include="Assets\Glyphs\marching-shamrocks_12x12.png">
+      <DeploymentContent>true</DeploymentContent>
+    </Image>
+  </ItemGroup>
+  <ItemGroup>
+    <ClCompile Include="src\actor.cpp" />
+    <ClCompile Include="src\cell.cpp" />
+    <ClCompile Include="src\coord.cpp" />
+    <ClCompile Include="src\engine.cpp" />
+    <ClCompile Include="src\glyph.cpp" />
+    <ClCompile Include="src\glyph_set.cpp" />
+    <ClCompile Include="src\grid.cpp" />
+    <ClCompile Include="src\map.cpp" />
+    <ClCompile Include="src\mt_engine.cpp" />
+    <ClCompile Include="src\point.cpp" />
+    <ClCompile Include="src\program.cpp" />
+    <ClCompile Include="src\program_old.cpp" />
+    <ClCompile Include="src\rect.cpp" />
+    <ClCompile Include="src\transform.cpp" />
+    <ClCompile Include="src\utility.cpp" />
+    <ClCompile Include="src\zone.cpp" />
+  </ItemGroup>
+  <ItemGroup>
+    <ClInclude Include="include\actor.hpp" />
+    <ClInclude Include="include\cell.hpp" />
+    <ClInclude Include="include\constants.hpp" />
+    <ClInclude Include="include\coord.hpp" />
+    <ClInclude Include="include\engine.hpp" />
+    <ClInclude Include="include\glyph.hpp" />
+    <ClInclude Include="include\glyph_set.hpp" />
+    <ClInclude Include="include\grid.hpp" />
+    <ClInclude Include="include\map.hpp" />
+    <ClInclude Include="include\mt_engine.hpp" />
+    <ClInclude Include="include\point.hpp" />
+    <ClInclude Include="include\rect.hpp" />
+    <ClInclude Include="include\transform.hpp" />
+    <ClInclude Include="include\utility.hpp" />
+    <ClInclude Include="include\zone.hpp" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">
     <Import Project="..\packages\sdl2.redist.2.0.5\build\native\sdl2.redist.targets" Condition="Exists('..\packages\sdl2.redist.2.0.5\build\native\sdl2.redist.targets')" />
     <Import Project="..\packages\sdl2.2.0.5\build\native\sdl2.targets" Condition="Exists('..\packages\sdl2.2.0.5\build\native\sdl2.targets')" />
-    <Import Project="..\packages\sdl2.nuget.redist.2.0.8\build\native\sdl2.nuget.redist.targets" Condition="Exists('..\packages\sdl2.nuget.redist.2.0.8\build\native\sdl2.nuget.redist.targets')" />
-    <Import Project="..\packages\sdl2.nuget.2.0.8\build\native\sdl2.nuget.targets" Condition="Exists('..\packages\sdl2.nuget.2.0.8\build\native\sdl2.nuget.targets')" />
     <Import Project="..\packages\sdl2_image.nuget.redist.2.6.3\build\native\sdl2_image.nuget.redist.targets" Condition="Exists('..\packages\sdl2_image.nuget.redist.2.6.3\build\native\sdl2_image.nuget.redist.targets')" />
     <Import Project="..\packages\sdl2_image.nuget.2.6.3\build\native\sdl2_image.nuget.targets" Condition="Exists('..\packages\sdl2_image.nuget.2.6.3\build\native\sdl2_image.nuget.targets')" />
+    <Import Project="..\packages\sdl2.nuget.redist.2.26.5\build\native\sdl2.nuget.redist.targets" Condition="Exists('..\packages\sdl2.nuget.redist.2.26.5\build\native\sdl2.nuget.redist.targets')" />
+    <Import Project="..\packages\sdl2.nuget.2.26.5\build\native\sdl2.nuget.targets" Condition="Exists('..\packages\sdl2.nuget.2.26.5\build\native\sdl2.nuget.targets')" />
+    <Import Project="..\packages\glm.0.9.9.800\build\native\glm.targets" Condition="Exists('..\packages\glm.0.9.9.800\build\native\glm.targets')" />
   </ImportGroup>
   <Target Name="EnsureNuGetPackageBuildImports" BeforeTargets="PrepareForBuild">
     <PropertyGroup>
@@ -179,9 +251,10 @@
     </PropertyGroup>
     <Error Condition="!Exists('..\packages\sdl2.redist.2.0.5\build\native\sdl2.redist.targets')" Text="$([System.String]::Format('$(ErrorText)', '..\packages\sdl2.redist.2.0.5\build\native\sdl2.redist.targets'))" />
     <Error Condition="!Exists('..\packages\sdl2.2.0.5\build\native\sdl2.targets')" Text="$([System.String]::Format('$(ErrorText)', '..\packages\sdl2.2.0.5\build\native\sdl2.targets'))" />
-    <Error Condition="!Exists('..\packages\sdl2.nuget.redist.2.0.8\build\native\sdl2.nuget.redist.targets')" Text="$([System.String]::Format('$(ErrorText)', '..\packages\sdl2.nuget.redist.2.0.8\build\native\sdl2.nuget.redist.targets'))" />
-    <Error Condition="!Exists('..\packages\sdl2.nuget.2.0.8\build\native\sdl2.nuget.targets')" Text="$([System.String]::Format('$(ErrorText)', '..\packages\sdl2.nuget.2.0.8\build\native\sdl2.nuget.targets'))" />
     <Error Condition="!Exists('..\packages\sdl2_image.nuget.redist.2.6.3\build\native\sdl2_image.nuget.redist.targets')" Text="$([System.String]::Format('$(ErrorText)', '..\packages\sdl2_image.nuget.redist.2.6.3\build\native\sdl2_image.nuget.redist.targets'))" />
     <Error Condition="!Exists('..\packages\sdl2_image.nuget.2.6.3\build\native\sdl2_image.nuget.targets')" Text="$([System.String]::Format('$(ErrorText)', '..\packages\sdl2_image.nuget.2.6.3\build\native\sdl2_image.nuget.targets'))" />
+    <Error Condition="!Exists('..\packages\sdl2.nuget.redist.2.26.5\build\native\sdl2.nuget.redist.targets')" Text="$([System.String]::Format('$(ErrorText)', '..\packages\sdl2.nuget.redist.2.26.5\build\native\sdl2.nuget.redist.targets'))" />
+    <Error Condition="!Exists('..\packages\sdl2.nuget.2.26.5\build\native\sdl2.nuget.targets')" Text="$([System.String]::Format('$(ErrorText)', '..\packages\sdl2.nuget.2.26.5\build\native\sdl2.nuget.targets'))" />
+    <Error Condition="!Exists('..\packages\glm.0.9.9.800\build\native\glm.targets')" Text="$([System.String]::Format('$(ErrorText)', '..\packages\glm.0.9.9.800\build\native\glm.targets'))" />
   </Target>
 </Project>

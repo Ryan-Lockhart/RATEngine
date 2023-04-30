@@ -4,8 +4,8 @@
 #include <string>
 #include "utility.hpp"
 
-#include <SDL.h>
-#include <SDL_image.h>
+#include <SDL2/SDL.h>
+#include <SDL2/SDL_image.h>
 
 namespace rat
 {
@@ -26,9 +26,9 @@ namespace rat
 	protected:
 		void SetDrawColor(const Color& color);
 
-		void DrawRect(const Transform& transform, bool fill = false);
-		void DrawRect(const Position& position, const Size& size, bool fill = false);
-		void DrawRect(int x, int y, int width, int height, bool fill = false);
+		void DrawRect(const Transform& transform, const Size& scale_by = { 1, 1 }, bool fill = false);
+		void DrawRect(const Position& position, const Size& size, const Size& scale_by = { 1, 1 }, bool fill = false);
+		void DrawRect(int x, int y, int width, int height, const Size& scale_by = { 1, 1 }, bool fill = false);
 
 		void DrawText(const std::string& text, const Position& position, const TextAlignment& alignment, const Color& color);
 		void DrawLabel(const std::string& text, const Position& position, const Size& padding, const TextAlignment& alignment, const Color& color);
