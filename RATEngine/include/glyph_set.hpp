@@ -4,7 +4,10 @@
 
 #include <string>
 #include <vector>
-#include "utility.hpp"
+
+#include "constants.hpp"
+
+#include "rect.hpp"
 
 struct SDL_Rect;
 struct SDL_Texture;
@@ -15,20 +18,17 @@ namespace rat
 	class GlyphSet
 	{
 	public:
-		GlyphSet(SDL_Renderer* renderer, std::string path, const Size& size);
+		GlyphSet(SDL_Renderer* renderer);
 		~GlyphSet();
 
-		void DrawGlyph(uint8_t glyphIndex, const Color& color, const Position& position) const;
-		void DrawGlyph(const Glyph& glyph, const Position& position) const;
+		void DrawGlyph(uint8_t glyphIndex, const Color& color, const Point& position) const;
+		void DrawGlyph(const Glyph& glyph, const Point& position) const;
+		void DrawGlyph(const Glyph& glyph, const Rect& rect) const;
 
-		void SetDrawColor(const Color& color);
-
-		const Size& GetSize() const;
+		void SetDrawColor(const Color& color) const;
 	private:
 		SDL_Texture* ptr_Texture;
 		SDL_Renderer* ptr_Renderer;
-
-		Size m_Size;
 
 		std::vector<SDL_Rect*> m_GlyphRects;
 

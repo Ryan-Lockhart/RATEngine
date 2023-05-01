@@ -1,20 +1,7 @@
-#ifndef UTILITY_HPP
-
-#define UTILITY_HPP
+#pragma once
 
 namespace rat
 {
-	struct Color
-	{
-		uint8_t r, g, b, a;
-	};
-
-	struct Glyph
-	{
-		uint8_t index;
-		Color color;
-	};
-
 	enum class VerticalAlignment
 	{
 		Center,
@@ -33,9 +20,5 @@ namespace rat
 	{
 		VerticalAlignment vertical;
 		HorizontalAlignment horizontal;
-
-		auto alignment() const;
 	};
 }
-
-#endif

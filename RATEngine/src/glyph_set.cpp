@@ -7,20 +7,20 @@
 
 namespace rat
 {
-	GlyphSet::GlyphSet(SDL_Renderer* renderer, std::string path, const Size& size) :
-		m_Size(size), ptr_Renderer(renderer), ptr_Texture(nullptr)
+	GlyphSet::GlyphSet(SDL_Renderer* renderer) :
+		ptr_Renderer(renderer), ptr_Texture(nullptr)
 	{
 		if (ptr_Renderer)
 		{
-			ptr_Texture = IMG_LoadTexture(ptr_Renderer, path.c_str());
+			ptr_Texture = IMG_LoadTexture(ptr_Renderer, glyphSetPath.c_str());
 
 			if (ptr_Texture)
 			{
-				m_GlyphRects.reserve(sheetSize);
+				m_GlyphRects.reserve(sheetSize.Area());
 
-				for (size_t y = 0; y < sheetLength * m_Size.height; y += m_Size.height)
-					for (size_t x = 0; x < sheetLength * m_Size.width; x += m_Size.width)
-						m_GlyphRects.push_back(new SDL_Rect{ (int)x, (int)y, m_Size.width, m_Size.height });
+				for (size_t y = 0; y < sheetSize.Height * glyphSize.Height; y += glyphSize.Height)
+					for (size_t x = 0; x < sheetSize.Width * glyphSize.Width; x += glyphSize.Width)
+						m_GlyphRects.push_back(new SDL_Rect{ (int)x, (int)y, (int)glyphSize.Width, (int)glyphSize.Height });
 			}
 			else throw(std::exception(SDL_GetError()));
 		}
@@ -51,22 +51,29 @@ namespace rat
 		}
 	}
 
-	void GlyphSet::DrawGlyph(uint8_t index, const Color& color, const Position& position) const
+	void GlyphSet::DrawGlyph(uint8_t index, const Color& color, const Point& position) const
 	{
-		SDL_Rect rect{ position.x * m_Size.width, position.y * m_Size.height, m_Size.width, m_Size.height };
+		SetDrawColor(color);
+		SDL_Rect rect{ position.X * glyphSize.Width, position.Y * glyphSize.Height, glyphSize.Width, glyphSize.Height };
 		SDL_RenderCopy(ptr_Renderer, ptr_Texture, GetRect(index), &rect);
 	}
 
-	void GlyphSet::DrawGlyph(const Glyph& glyph, const Position& position) const
+	void GlyphSet::DrawGlyph(const Glyph& glyph, const Point& position) const
 	{
-		SDL_Rect rect{ position.x * m_Size.width, position.y * m_Size.height, m_Size.width, m_Size.height };
+		SetDrawColor(glyph.color);
+		SDL_Rect rect{ position.X * glyphSize.Width, position.Y * glyphSize.Height, glyphSize.Width, glyphSize.Height };
 		SDL_RenderCopy(ptr_Renderer, ptr_Texture, GetRect(glyph.index), &rect);
 	}
 
-	void GlyphSet::SetDrawColor(const Color& color)
+	void GlyphSet::DrawGlyph(const Glyph& glyph, const Rect& rect) const
+	{
+		SetDrawColor(glyph.color);
+		SDL_Rect sdl_rect = rect.ToSDL();
+		SDL_RenderCopy(ptr_Renderer, ptr_Texture, GetRect(glyph.index), &sdl_rect);
+	}
+
+	void GlyphSet::SetDrawColor(const Color& color) const
 	{
 		SDL_SetTextureColorMod(ptr_Texture, color.r, color.g, color.b);
 	}
-
-	const Size& GlyphSet::GetSize() const { return m_Size; }
 }

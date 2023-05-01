@@ -1,161 +1,142 @@
-#ifndef CONSTANTS_H
-
-#define CONSTANTS_H
+#pragma once
 
 #include <string>
 #include <vector>
 
-#include "utility.hpp"
-
 #include "point.hpp"
-#include "rect.hpp"
+#include "size.hpp"
 
 #include "coord.hpp"
-#include "transform.hpp"
+#include "bounds.hpp"
+
+#include "color.hpp"
+#include "glyph.hpp"
+#include "alignment.hpp"
+
+#include <list>
 
 namespace rat
 {
-	using Position2D = Point<int64_t>;
-	using Size2D = Point<uint32_t>;
+	extern std::list<std::string> messageLog;
+	constexpr int maxMessages = 2;
 
-	using Position3D = Coord<int64_t>;
-	using Size3D = Coord<uint32_t>;
+	constexpr float fillPercent = 0.4f;
+	constexpr size_t automataIterations = 10;
+	constexpr size_t automataThreshold = 4;
 
-	constexpr float windowWidth = 1280;
-	constexpr float windowHeight = 720;
+	const Size glyphSize{ 12UL, 12UL };
+	const Size sheetSize{ 16UL, 16UL };
 
-	constexpr Size2D glyphSize{ 12, 12 };
-	constexpr Size2D sheetSize = { 16, 16 };
-	constexpr Size2D displaySize = { 64, 48 };
-	constexpr Size2D windowSize{ displaySize * glyphSize };
+	const std::string glyphSetPath{ "assets/glyphs/glyphs_12x12.png" };
 
-	constexpr size_t floorGlyph = 0xB0;
-	constexpr size_t wallGlyph = 0xB2;
-	constexpr size_t actorGlyph = 0x40;
-	constexpr size_t bloodGlyph = 0xF7;
+	const Size displaySize{ 110UL, 60UL };
+	const Size windowSize{ displaySize * glyphSize };
 
-	constexpr const char* windowTitle = "Dungeon Sandbox (RATEngine) v0.011 04/30/2023";
+	const uint8_t floorGlyph = 0xB0;
+	const uint8_t wallGlyph = 0xB2;
+	const uint8_t actorGlyph = 0x40;
+	const uint8_t bloodGlyph = 0xF7;
 
-	constexpr bool noclipMode = false;
+	extern const char* windowTitle;
 
-	constexpr size_t zoneWidth = 64;
-	constexpr size_t zoneHeight = 64;
-	constexpr size_t zoneSize = zoneWidth * zoneHeight;
+	const bool noclipMode = false;
 
-	constexpr size_t mapWidth = 8;
-	constexpr size_t mapHeight = 8;
+	const Bounds zoneBounds{ 32, 32, 1 };
+	const Bounds mapBounds{ 8, 8, 1 };
+	const Bounds worldBounds{ zoneBounds * mapBounds };
 
-	constexpr size_t mapSize = mapWidth * mapHeight;
+	const Bounds borderSize{ 2, 2, 0 };
 
-	constexpr size_t worldWidth = mapWidth * zoneWidth;
-	constexpr size_t worldHeight = mapHeight * zoneHeight;
-
-	constexpr size_t worldSize = worldWidth * worldHeight;
-
-	constexpr int cameraSpeed = 10;
+	const int cameraSpeed = 10;
 
 	static std::string lastMessage("");
 
-	class Zone;
 	class Cell;
 
-	typedef std::vector<Zone*> zones_y_t;
-	typedef std::vector<zones_y_t> zones_t;
-
-	typedef std::vector<Cell*> cells_y_t;
-	typedef std::vector<cells_y_t> cells_t;
-
-	typedef std::vector<Cell*>::iterator cells_y_iterator;
-	typedef std::vector<cells_y_t>::iterator cells_x_iterator;
-
+	typedef std::vector<Cell*> cells_t;
 	typedef std::vector<bool> solids_t;
-
-
-	constexpr Size2D DefaultSize{ 1, 1 };
-
-	constexpr Rect DefaultTransform{ DefaultPosition, DefaultSize };
 
 	namespace Characters
 	{
-		constexpr char Empty{ ' ' };
-		constexpr char Wall{ 0xB2 };
-		constexpr char Obstacle{ 0xB1 };
-		constexpr char Floor{ 0xB0 };
-		constexpr char Entity{ '@' };
+		constexpr uint8_t Empty{ ' ' };
+		constexpr uint8_t Wall{ 0xB2 };
+		constexpr uint8_t Obstacle{ 0xB1 };
+		constexpr uint8_t Floor{ 0xB0 };
+		constexpr uint8_t Entity{ '@' };
 	}
 
 	// An organizational structure containitng initialized colors 
 	namespace Colors
 	{
-		constexpr Color Transperant{ 0, 0, 0, 0 };
+		const Color Transperant{ 0, 0, 0, 0 };
 
-		constexpr Color White{ 255, 255, 255, 255 };
-		constexpr Color Black{ 0, 0, 0, 255 };
+		const Color White{ 255, 255, 255, 255 };
+		const Color Black{ 0, 0, 0, 255 };
 
-		constexpr Color LightGrey{ 192, 192, 192, 255 };
-		constexpr Color Grey{ 128, 128, 128, 255 };
-		constexpr Color DarkGrey{ 64, 64, 64, 255 };
+		const Color LightGrey{ 192, 192, 192, 255 };
+		const Color Grey{ 128, 128, 128, 255 };
+		const Color DarkGrey{ 64, 64, 64, 255 };
 
-		constexpr Color Marble{ 240, 232, 232, 255 };
-		constexpr Color Intrite{ 112, 104, 104, 255 };
-		constexpr Color Charcoal{ 40, 32, 32, 255 };
+		const Color Marble{ 240, 232, 232, 255 };
+		const Color Intrite{ 112, 104, 104, 255 };
+		const Color Charcoal{ 40, 32, 32, 255 };
 
-		constexpr Color BrightRed{ 255, 0, 0, 255 };
-		constexpr Color LightRed{ 192, 0, 0, 255 };
-		constexpr Color DarkRed{ 128, 0, 0, 255 };
+		const Color BrightRed{ 255, 0, 0, 255 };
+		const Color LightRed{ 192, 0, 0, 255 };
+		const Color DarkRed{ 128, 0, 0, 255 };
 
-		constexpr Color BrightGreen{ 0, 255, 0, 255 };
-		constexpr Color LightGreen{ 0, 192, 0, 255 };
-		constexpr Color DarkGreen{ 0, 128, 0, 255 };
+		const Color BrightGreen{ 0, 255, 0, 255 };
+		const Color LightGreen{ 0, 192, 0, 255 };
+		const Color DarkGreen{ 0, 128, 0, 255 };
 
-		constexpr Color BrightBlue{ 0, 0, 255, 255 };
-		constexpr Color LightBlue{ 0, 0, 192, 255 };
-		constexpr Color DarkBlue{ 0, 0, 128, 255 };
+		const Color BrightBlue{ 0, 0, 255, 255 };
+		const Color LightBlue{ 0, 0, 192, 255 };
+		const Color DarkBlue{ 0, 0, 128, 255 };
 
-		constexpr Color BrightCyan{ 0, 255, 255, 255 };
-		constexpr Color LightCyan{ 0, 192, 192, 255 };
-		constexpr Color DarkCyan{ 0, 128, 128, 255 };
+		const Color BrightCyan{ 0, 255, 255, 255 };
+		const Color LightCyan{ 0, 192, 192, 255 };
+		const Color DarkCyan{ 0, 128, 128, 255 };
 
-		constexpr Color BrightMagenta{ 255, 0, 255, 255 };
-		constexpr Color LightMagenta{ 192, 0, 192, 255 };
-		constexpr Color DarkMagenta{ 128, 0, 128, 255 };
+		const Color BrightMagenta{ 255, 0, 255, 255 };
+		const Color LightMagenta{ 192, 0, 192, 255 };
+		const Color DarkMagenta{ 128, 0, 128, 255 };
 
-		constexpr Color BrightYellow{ 255, 255, 0, 255 };
-		constexpr Color LightYellow{ 192, 192, 0, 255 };
-		constexpr Color DarkYellow{ 128, 128, 0, 255 };
+		const Color BrightYellow{ 255, 255, 0, 255 };
+		const Color LightYellow{ 192, 192, 0, 255 };
+		const Color DarkYellow{ 128, 128, 0, 255 };
 
-		constexpr Color BrightOrange{ 255, 94, 5, 255 };
-		constexpr Color LightOrange{ 255, 165, 115, 255 };
-		constexpr Color DarkOrange{ 200, 71, 0, 255 };
+		const Color BrightOrange{ 255, 94, 5, 255 };
+		const Color LightOrange{ 255, 165, 115, 255 };
+		const Color DarkOrange{ 200, 71, 0, 255 };
 
 		// These colors have been initialized to represent various real world materials
 		namespace Materials
 		{
-			constexpr Color Blood{ 157, 34, 53, 255 };
+			const Color Blood{ 157, 34, 53, 255 };
 
-			constexpr Color Ebony{ 40, 44, 52, 255 };
-			constexpr Color Ivory{ 255, 255, 240, 255 };
+			const Color Ebony{ 40, 44, 52, 255 };
+			const Color Ivory{ 255, 255, 240, 255 };
 
-			constexpr Color Oak{ 120, 81, 45, 255 };
-			constexpr Color Willow{ 168, 172, 155, 255 };
-			constexpr Color Birch{ 234, 225, 216, 255 };
+			const Color Oak{ 120, 81, 45, 255 };
+			const Color Willow{ 168, 172, 155, 255 };
+			const Color Birch{ 234, 225, 216, 255 };
 		}
 
 		// These colors have been initialized to represent various real world materials
 		namespace Metals
 		{
-			constexpr Color Iron{ 161, 157, 148, 255 };
-			constexpr Color Steel{ 67, 70, 75, 255 };
+			const Color Iron{ 161, 157, 148, 255 };
+			const Color Steel{ 67, 70, 75, 255 };
 
-			constexpr Color Gold{ 255, 215, 0, 255 };
-			constexpr Color Silver{ 192, 192, 192, 255 };
-			constexpr Color Copper{ 184, 115, 51, 255 };
+			const Color Gold{ 255, 215, 0, 255 };
+			const Color Silver{ 192, 192, 192, 255 };
+			const Color Copper{ 184, 115, 51, 255 };
 
-			constexpr Color Tin{ 145, 145, 145, 255 };
-			constexpr Color Bronze{ 205, 127, 50, 255 };
+			const Color Tin{ 145, 145, 145, 255 };
+			const Color Bronze{ 205, 127, 50, 255 };
 
-			constexpr Color Zinc{ 186, 196, 200, 255 };
-			constexpr Color Brass{ 181, 166, 66, 255 };
+			const Color Zinc{ 186, 196, 200, 255 };
+			const Color Brass{ 181, 166, 66, 255 };
 		}
 	}
 
@@ -165,20 +146,20 @@ namespace rat
 		// These glyphs have been initialized for use with a 256 character ASCII glyph set
 		namespace ASCII
 		{
-			constexpr Glyph Error{ 'X', Colors::BrightRed };
+			const Glyph Error{ 'X', Colors::BrightRed };
 
-			constexpr Glyph Wall{ Characters::Wall, Colors::Marble };
-			constexpr Glyph Floor{ Characters::Floor, Colors::Charcoal };
-			constexpr Glyph Obstacle{ Characters::Obstacle, Colors::Intrite };
+			const Glyph Wall{ Characters::Wall, Colors::Marble };
+			const Glyph Floor{ Characters::Floor, Colors::Charcoal };
+			const Glyph Obstacle{ Characters::Obstacle, Colors::Intrite };
 
-			constexpr Glyph WallBloody{ Characters::Wall, Colors::Materials::Blood };
-			constexpr Glyph FloorBloody{ Characters::Floor, Colors::Materials::Blood };
-			constexpr Glyph ObstacleBloody{ Characters::Obstacle, Colors::Materials::Blood };
+			const Glyph WallBloody{ Characters::Wall, Colors::Materials::Blood };
+			const Glyph FloorBloody{ Characters::Floor, Colors::Materials::Blood };
+			const Glyph ObstacleBloody{ Characters::Obstacle, Colors::Materials::Blood };
 
-			constexpr Glyph Player{ Characters::Entity, Colors::BrightGreen };
-			constexpr Glyph Enemy{ Characters::Entity, Colors::BrightRed };
-			constexpr Glyph Ally{ Characters::Entity, Colors::BrightCyan };
-			constexpr Glyph Neutral{ Characters::Entity, Colors::BrightYellow };
+			const Glyph Player{ Characters::Entity, Colors::BrightGreen };
+			const Glyph Enemy{ Characters::Entity, Colors::BrightRed };
+			const Glyph Ally{ Characters::Entity, Colors::BrightCyan };
+			const Glyph Neutral{ Characters::Entity, Colors::BrightYellow };
 		}
 
 		// These glyphs have been initialized for use with the Battle Graphics glyph set
@@ -190,18 +171,16 @@ namespace rat
 
 	namespace Alignments
 	{
-		constexpr TextAlignment Centered{ VerticalAlignment::Center, HorizontalAlignment::Center };
-		constexpr TextAlignment LeftCentered{ VerticalAlignment::Center, HorizontalAlignment::Left };
-		constexpr TextAlignment RightCentered{ VerticalAlignment::Center, HorizontalAlignment::Right };
+		const TextAlignment Centered{ VerticalAlignment::Center, HorizontalAlignment::Center };
+		const TextAlignment LeftCentered{ VerticalAlignment::Center, HorizontalAlignment::Left };
+		const TextAlignment RightCentered{ VerticalAlignment::Center, HorizontalAlignment::Right };
 
-		constexpr TextAlignment UpperCentered{ VerticalAlignment::Upper, HorizontalAlignment::Center };
-		constexpr TextAlignment UpperLeft{ VerticalAlignment::Upper, HorizontalAlignment::Left };
-		constexpr TextAlignment UpperRight{ VerticalAlignment::Upper, HorizontalAlignment::Right };
+		const TextAlignment UpperCentered{ VerticalAlignment::Upper, HorizontalAlignment::Center };
+		const TextAlignment UpperLeft{ VerticalAlignment::Upper, HorizontalAlignment::Left };
+		const TextAlignment UpperRight{ VerticalAlignment::Upper, HorizontalAlignment::Right };
 
-		constexpr TextAlignment LowerCentered{ VerticalAlignment::Lower, HorizontalAlignment::Center };
-		constexpr TextAlignment LowerLeft{ VerticalAlignment::Lower, HorizontalAlignment::Left };
-		constexpr TextAlignment LowerRight{ VerticalAlignment::Lower, HorizontalAlignment::Right };
+		const TextAlignment LowerCentered{ VerticalAlignment::Lower, HorizontalAlignment::Center };
+		const TextAlignment LowerLeft{ VerticalAlignment::Lower, HorizontalAlignment::Left };
+		const TextAlignment LowerRight{ VerticalAlignment::Lower, HorizontalAlignment::Right };
 	}
 }
-
-#endif

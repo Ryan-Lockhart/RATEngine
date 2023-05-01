@@ -1,50 +1,48 @@
-#ifndef COORD_H
+#pragma once
 
-#define COORD_H
+#include <cstdint>
+#include <math.h>
+#include <string>
+#include <format>
 
 namespace rat
 {
-	template <typename T>
+	using coord_t = int64_t;
+
 	struct Point;
 
-	/// <summary>
-	/// A three dimensional coordinate in space
-	/// </summary>
-	/// <typeparam name="T">The type of the X, Y, and Z components</typeparam>
-	template <typename T>
 	struct Coord
 	{
-		Coord<T>(T x, T y, T z);
-		Coord<T>(const Coord<T>& point);
+		coord_t X;
+		coord_t Y;
+		coord_t Z;
 
-		T X;
-		T Y;
-		T Z;
+		Coord();
+		Coord(coord_t x, coord_t y, coord_t z);
+		Coord(const Coord& coord);
 
-		Coord<T> operator +(const Coord<T>& lhs);
-		Coord<T> operator -(const Coord<T>& lhs);
-		Coord<T> operator *(const Coord<T>& lhs);
-		Coord<T> operator *(T scalar);
-		Coord<T> operator /(const Coord<T>& lhs);
-		Coord<T> operator /(T scalar);
+		friend Coord operator +(const Coord& lhs, const Coord& rhs);
+		friend Coord operator -(const Coord& lhs, const Coord& rhs);
+		friend Coord operator *(const Coord& lhs, const Coord& rhs);
+		friend Coord operator /(const Coord& lhs, const Coord& rhs);
+		friend Coord operator *(const Coord& lhs, coord_t scalar);
+		friend Coord operator /(const Coord& lhs, coord_t scalar);
 
-		Coord<T>& operator +=(const Coord<T>& rhs);
-		Coord<T>& operator -=(const Coord<T>& rhs);
-		Coord<T>& operator *=(const Coord<T>& lhs);
-		Coord<T>& operator *=(T scalar);
-		Coord<T>& operator /=(const Coord<T>& lhs);
-		Coord<T>& operator /=(T scalar);
+		Coord& operator +=(const Coord& rhs);
+		Coord& operator -=(const Coord& rhs);
+		Coord& operator *=(const Coord& lhs);
+		Coord& operator /=(const Coord& lhs);
+		Coord& operator *=(coord_t scalar);
+		Coord& operator /=(coord_t scalar);
 
-		friend bool operator ==(const Coord<T>& lhs, const Coord<T>& rhs);
-		friend bool operator !=(const Coord<T>& lhs, const Coord<T>& rhs);
+		friend bool operator ==(const Coord& lhs, const Coord& rhs);
+		friend bool operator !=(const Coord& lhs, const Coord& rhs);
 
-		Point<T> operator Point<T>();
+		coord_t Length() const;
+		Coord Magnitude() const;
 
-		T length() const;
-		Coord<T> magnitude() const;
-		T area() const;
-		T volume() const;
+		Point ToPoint() const;
+
+		operator std::string() const;
 	};
 }
-
-#endif

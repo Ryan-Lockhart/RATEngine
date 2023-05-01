@@ -1,220 +1,226 @@
+#include "constants.hpp"
 #include "map.hpp"
 #include "cell.hpp"
 #include "actor.hpp"
 #include "mt_engine.hpp"
-#include "glyphtype.hpp"
+#include "glyph_set.hpp"
 #include <stdexcept>
 
-constexpr size_t automataThreshold = 4;
-
-Map::Map() :
-	m_Position({ 0, 0 })
+namespace rat
 {
-	m_Solids = new solids_t(worldSize, false);
-	m_Cells = new cells_t(worldWidth, (cells_y_t(worldHeight, nullptr)));
-}
-Map::~Map()
-{
-	delete m_Solids;
+	Map::Map() :
+		m_Position({ 0, 0 })
+	{
+		m_Solids = new solids_t(worldBounds.Volume(), false);
+		m_Cells = new cells_t(worldBounds.Volume(), nullptr);
+	}
+	Map::~Map()
+	{
+		delete m_Solids;
 
-	for (cells_x_iterator x = m_Cells->begin(); x != m_Cells->end(); x++)
-		for (cells_y_iterator y = x->begin(); y != x->end(); y++)
-			delete (*y);
+		for (Cell* cell : *m_Cells)
+				delete (cell);
 
-	delete m_Cells;
-}
+		delete m_Cells;
+	}
 
-void Map::Move(raylib::Vector2 position, bool offset)
-{
-	if (offset)
-	{ m_Position += position; }
-	else
-	{ m_Position = position; }
+	void Map::Move(const Point& position, bool offset)
+	{
+		if (offset) { m_Position += position * glyphSize; }
+		else { m_Position = position * glyphSize; }
 
-	ConstrainToScreen();
-}
+		ConstrainToScreen();
+	}
 
-void Map::ConstrainToScreen()
-{
-	if (m_Position.x > 0)
-		m_Position.x = 0;
+	void Map::ConstrainToScreen()
+	{
+		if (m_Position.X > 0)
+			m_Position.X = 0;
+		else if (m_Position.X < (worldBounds.Width * -(int64_t)glyphSize.Width) + windowSize.Width)
+			m_Position.X = (worldBounds.Width * -(int64_t)glyphSize.Width) + windowSize.Width;
 
-	if (m_Position.y > 0)
-		m_Position.y = 0;
+		if (m_Position.Y > 0)
+			m_Position.Y = 0;
+		else if (m_Position.Y < -(worldBounds.Height * (int64_t)glyphSize.Height) + windowSize.Height)
+			m_Position.Y = -(worldBounds.Height * (int64_t)glyphSize.Height) + windowSize.Height;
+	}
 
-	if (m_Position.x < ((float)worldWidth * -12) + windowWidth)
-		m_Position.x = ((float)worldWidth * -12) + windowWidth;
-
-	if (m_Position.y < ((float)worldHeight * -12) + windowHeight)
-		m_Position.y = ((float)worldHeight * -12) + windowHeight;
-}
-
-void Map::Generate()
-{
-	MTEngine random;
-
-	for (size_t x = 0; x < worldWidth; x++)
-		for (size_t y = 0; y < worldHeight; y++)
-		{
-			if (x < 2 || y < 2 || x > worldWidth - 2 || y > worldHeight - 2)
-			{
-				try { m_Solids->at(x * worldWidth + y) = true; }
-				catch (std::out_of_range e)
+	void Map::Generate()
+	{
+		for (int64_t z = 0; z < worldBounds.Depth; z++)
+			for (int64_t y = 0; y < worldBounds.Height; y++)
+				for (int64_t x = 0; x < worldBounds.Width; x++)
 				{
-					throw (e.what());
-				}
-			}
-			else
-			{
-				try { m_Solids->at(x * worldWidth + y) = random.NextBool(); }
-				catch (std::out_of_range e)
-				{
-					throw (e.what());
-				}
-			}
-		}
-}
+					if (x >= 0 || y >= 0 || z >= 0 || x < worldBounds.Width || y < worldBounds.Height || z < worldBounds.Depth)
+					{
+						bool withinMapBorder (
+							x >= borderSize.Width
+							&& y >= borderSize.Height
+							&& (z >= borderSize.Depth || worldBounds.Depth == 1)
+							&& x < worldBounds.Width - borderSize.Width
+							&& y < worldBounds.Height - borderSize.Width
+							&& (z < worldBounds.Depth - borderSize.Depth || worldBounds.Depth == 1)
+						);
 
-void Map::Smooth(size_t iterations)
-{
-	for (size_t i = 0; i < iterations; i++)
+						Coord position{ x, y, z };
+
+						SetSolid(position, withinMapBorder ? Random::Generator->NextBool(fillPercent) : true, m_Solids);
+					}
+				}
+	}
+
+	void Map::Smooth()
 	{
 		solids_t* smoothed(new solids_t(*m_Solids));
 
-		for (size_t x = 0; x < worldWidth; x++)
-			for (size_t y = 0; y < worldHeight; y++)
-			{
-				int neighbours = Automatize(smoothed, x, y);
+		for (size_t i = 0; i < automataIterations; i++)
+		{
+			for (int64_t z = 0; z < worldBounds.Depth; z++)
+				for (int64_t y = 0; y < worldBounds.Height; y++)
+					for (int64_t x = 0; x < worldBounds.Width; x++)
+					{
+						Coord position{ x, y, z };
 
-				if (neighbours > automataThreshold)
-					smoothed->at(x * worldWidth + y) = true;
-				else if (neighbours < automataThreshold)
-					smoothed->at(x * worldWidth + y) = false;
+						bool withinMapBorder(
+							x >= borderSize.Width
+							&& y >= borderSize.Height
+							&& (z >= borderSize.Depth || worldBounds.Depth == 1)
+							&& x < worldBounds.Width - borderSize.Width
+							&& y < worldBounds.Height - borderSize.Width
+							&& (z < worldBounds.Depth - borderSize.Depth || worldBounds.Depth == 1)
+						);
+
+						if (!withinMapBorder)
+							SetSolid(position, true, smoothed);
+						else
+						{
+							int neighbours = Automatize(m_Solids, position);
+
+							if (neighbours > automataThreshold)
+								SetSolid(position, true, smoothed);
+							else if (neighbours < automataThreshold)
+								SetSolid(position, false, smoothed);
+						}
+					}
+
+			std::swap(m_Solids, smoothed);
+		}
+
+		delete smoothed;
+	}
+
+	int Map::Automatize(solids_t* solids, const Coord& position) const
+	{
+		int neighbours = 0;
+
+		bool isFlat(worldBounds.Depth == 1);
+
+		for (int64_t offset_z = -1; offset_z <= 1; offset_z++)
+		{
+			for (int64_t offset_y = -1; offset_y <= 1; offset_y++)
+			{
+				for (int64_t offset_x = -1; offset_x <= 1; offset_x++)
+				{
+					if (offset_x != 0 || offset_y != 0 || (offset_z != 0 || isFlat))
+					{
+						Coord coord = position + Coord{ offset_x, offset_y, isFlat ? 0 : offset_z };
+
+						neighbours += IsSolid(coord, m_Solids);
+					}
+				}
 			}
 
-		delete m_Solids;
-		m_Solids = smoothed;
-	}
-}
-
-int Map::Automatize(solids_t* solids, size_t posX, size_t posY) const
-{
-	int neighbours = 0;
-
-	try { neighbours += (int)solids->at((posX - 1) * worldWidth + (posY - 1)); }
-	catch (std::out_of_range)
-	{
-		neighbours += 1;
-	}
-
-	try { neighbours += (int)solids->at((posX - 1) * worldWidth + (posY + 0)); }
-	catch (std::out_of_range)
-	{
-		neighbours += 1;
-	}
-
-	try { neighbours += (int)solids->at((posX - 1) * worldWidth + (posY + 1)); }
-	catch (std::out_of_range)
-	{
-		neighbours += 1;
-	}
-
-	try { neighbours += (int)solids->at((posX + 0) * worldWidth + (posY - 1)); }
-	catch (std::out_of_range)
-	{
-		neighbours += 1;
-	}
-
-	try { neighbours += (int)solids->at((posX + 0) * worldWidth + (posY + 1)); }
-	catch (std::out_of_range)
-	{
-		neighbours += 1;
-	}
-
-	try { neighbours += (int)solids->at((posX + 1) * worldWidth + (posY - 1)); }
-	catch (std::out_of_range)
-	{
-		neighbours += 1;
-	}
-
-	try { neighbours += (int)solids->at((posX + 1) * worldWidth + (posY + 0)); }
-	catch (std::out_of_range)
-	{
-		neighbours += 1;
-	}
-
-	try { neighbours += (int)solids->at((posX + 1) * worldWidth + (posY + 1)); }
-	catch (std::out_of_range)
-	{
-		neighbours += 1;
-	}
-
-	return neighbours;
-}
-
-void Map::Populate()
-{
-	for (size_t x = 0; x < worldWidth; x++)
-		for (size_t y = 0; y < worldHeight; y++)
-		{
-			bool solid = m_Solids->at(x * worldWidth + y);
-
-			Glyph wall(wallGlyph, MARBLE);
-			Glyph floor(floorGlyph, CHARCOAL);
-
-			try
-			{ m_Cells->at(x).at(y) = new Cell({ (float)x, (float)y }, wall, floor, solid, solid); }
-			catch (std::out_of_range e)
-			{ throw(e.what()); }
+			if (isFlat)
+				return neighbours;
 		}
-}
 
-Cell* Map::FindOpen(float checkPercent)
-{
-	MTEngine random;
-
-	while (true)
-	{
-		size_t x(random.Next(0, worldWidth - 1));
-		size_t y(random.Next(0, worldHeight - 1));
-
-		try
-		{
-			if (!m_Cells->at(x).at(y)->IsSolid() && m_Cells->at(x).at(y)->IsVacant())
-				return m_Cells->at(x).at(y);
-		}
-		catch (std::out_of_range)
-		{
-			throw std::out_of_range("Cell position out of range");
-		}
+		return neighbours;
 	}
 
-	return nullptr;
-}
+	void Map::Populate()
+	{
+		for (int64_t z = 0; z < worldBounds.Depth; z++)
+			for (int64_t y = 0; y < worldBounds.Height; y++)
+				for (int64_t x = 0; x < worldBounds.Width; x++)
+				{
+					Coord coord{ x, y, z };
 
-const solids_t& Map::GetSolids() const
-{
-	return *m_Solids;
-}
+					bool solid = IsSolid(coord, m_Solids);
 
-void Map::CenterOn(raylib::Vector2 position)
-{
-	m_Position.x = (position.x * glyphWidth) * -1 + windowWidth / 2;
-	m_Position.y = (position.y * glyphHeight) * -1 + windowHeight / 2;
+					Cell*& cell = GetCell(coord);
+					cell = new Cell(coord, Glyphs::ASCII::Wall, Glyphs::ASCII::Floor, solid, solid);
+				}
+	}
 
-	ConstrainToScreen();
-}
+	void Map::Update()
+	{
+		for (int64_t z = 0; z < worldBounds.Depth; z++)
+			for (int64_t y = 0; y < worldBounds.Height; y++)
+				for (int64_t x = 0; x < worldBounds.Width; x++)
+				{
+					Coord coord{ x, y, z };
 
-void Map::Draw(const GlyphType& glyphType) const
-{
-	for (int x = 0; x < worldWidth; x++)
-		for (int y = 0; y < worldHeight; y++)
+					bool solid = IsSolid(coord, m_Solids);
+
+					Cell* cell = GetCell(coord);
+					if (cell != nullptr)
+						cell->Update(coord, Glyphs::ASCII::Wall, Glyphs::ASCII::Floor, solid, solid);
+				}
+	}
+
+	Cell*& Map::FindOpen(float checkPercent) const
+	{
+		int maxChecks = worldBounds.Volume() * checkPercent;
+		int checks(0);
+
+		while (checks < maxChecks)
 		{
-			try
-			{ m_Cells->at(x).at(y)->Draw(glyphType, m_Position); }
-			catch (std::out_of_range e)
+			int64_t x(Random::Generator->Next(0, worldBounds.Width - 1));
+			int64_t y(Random::Generator->Next(0, worldBounds.Height - 1));
+			int64_t z(Random::Generator->Next(0, worldBounds.Depth - 1));
+
+			Coord randomPos{ x, y, z };
+
+			Cell* randomCell = GetCell(randomPos);
+
+			if (randomCell != nullptr)
 			{
-				throw (e.what());
+				if (!randomCell->IsSolid())
+					if (randomCell->IsVacant())
+						return randomCell;
 			}
+			else checks++;
 		}
+
+		throw("No open cells!");
+	}
+
+	void Map::CenterOn(const Point& position)
+	{
+		m_Position.X = position.X * -(int64_t)glyphSize.Width + (int64_t)windowSize.Width / 2;
+		m_Position.Y = position.Y * -(int64_t)glyphSize.Height + (int64_t)windowSize.Height / 2;
+
+		ConstrainToScreen();
+	}
+
+	void Map::Draw(const GlyphSet& glyphSet, int64_t drawDepth) const
+	{
+		for (int64_t y = 0; y < worldBounds.Height; y++)
+			for (int64_t x = 0; x < worldBounds.Width; x++)
+			{
+				Coord cellCoord{ x, y, drawDepth };
+
+				GetCell(cellCoord)->Draw(glyphSet, m_Position);
+			}
+	}
+	bool Map::IsValid(const Coord& position) const
+	{
+		return position.X >= 0 && position.Y >= 0 && position.X < worldBounds.Width && position.Y < worldBounds.Height && position.Z >= 0 && position.Z < worldBounds.Depth;
+	}
+
+	bool Map::WithinBounds(const Coord& position) const
+	{
+		bool isFlat = worldBounds.Depth == 1;
+		return position.X >= borderSize.Width && position.Y >= borderSize.Height && position.X < worldBounds.Width - borderSize.Width && position.Y < worldBounds.Height - borderSize.Height && (position.Z >= borderSize.Depth || isFlat) && (position.Z < worldBounds.Depth - borderSize.Depth || isFlat);
+	}
 }

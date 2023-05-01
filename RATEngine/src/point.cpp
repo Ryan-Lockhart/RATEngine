@@ -1,71 +1,76 @@
 #include "point.hpp"
+#include "coord.hpp"
+#include "size.hpp"
 
 namespace rat
 {
-	template<typename T>
-	Point<T>::Point<T>(T x, T y) : X(x), Y(y) { }
+	#pragma region Constructors
 
-	template<typename T>
-	Point<T>::Point<T>(const Point<T>& point) : X(point.X), Y(point.Y) { }
+		Point::Point() : X(0), Y(0) { }
 
-	template<typename T>
-	Point<T> Point<T>::operator+(const Point<T>& lhs) { return Point<T>(X + lhs.X, Y + lhs.Y); }
+		Point::Point(point_t x, point_t y) : X(x), Y(y) { }
 
-	template<typename T>
-	Point<T> Point<T>::operator-(const Point<T>& lhs) { return Point<T>(X - lhs.X, Y - lhs.Y); }
+		Point::Point(const Point& point) : X(point.X), Y(point.Y) { }
 
-	template<typename T>
-	Point<T>& Point<T>::operator+=(const Point<T>& rhs) { X += rhs.X; Y += rhs.Y; return *this; }
+		#pragma endregion
 
-	template<typename T>
-	Point<T>& Point<T>::operator-=(const Point<T>& rhs) { X -= rhs.X; Y -= rhs.Y; return *this; }
+		#pragma region Unary Operators
 
-	template<typename T>
-	Point<T> Point<T>::operator*(const Point<T>& lhs) { return Point<T>(X * lhs.X, Y * lhs.Y); }
+		Point operator+(const Point& lhs, const Point& rhs) { return Point(lhs.X + rhs.X, lhs.Y + rhs.Y); }
 
-	template<typename T>
-	Point<T> Point<T>::operator*(T scalar) { return Point<T>(X * scalar, Y * scalar); }
+		Point operator-(const Point& lhs, const Point& rhs) { return Point(lhs.X - rhs.X, lhs.Y - rhs.Y); }
 
-	template<typename T>
-	Point<T> Point<T>::operator/(const Point<T>& lhs) { return Point<T>(X / lhs.X, Y / lhs.Y); }
+		Point operator*(const Point& lhs, const Point& rhs) { return Point(lhs.X * rhs.X, lhs.Y * rhs.Y); }
 
-	template<typename T>
-	Point<T> Point<T>::operator/(T scalar) { return Point<T>(X / scalar, Y / scalar); }
+		Point operator/(const Point& lhs, const Point& rhs) { return Point(lhs.X / rhs.X, lhs.Y / rhs.Y); }
 
-	template<typename T>
-	void Point<T>::operator *=(const Point<T>& lhs) { X *= lhs.X; Y *= lhs.Y; }
+		Point operator*(const Point& lhs, point_t scalar) { return Point(lhs.X * scalar, lhs.Y * scalar); }
 
-	template<typename T>
-	void Point<T>::operator*=(T scalar) { X *= scalar; Y *= scalar; return *this; }
+		Point operator/(const Point& lhs, point_t scalar) { return Point(lhs.X / scalar, lhs.Y / scalar); }
 
-	template<typename T>
-	void Point<T>::operator /=(const Point<T>& lhs) { X /= lhs.X; Y /= lhs.Y; }
+		Point operator+(const Point& lhs, const Size& rhs) { return Point(lhs.X + rhs.Width, lhs.Y + rhs.Height); }
 
-	template<typename T>
-	void Point<T>::operator/=(T scalar) { X /= scalar; Y /= scalar;return *this; }
+		Point operator-(const Point& lhs, const Size& rhs) { return Point(lhs.X - rhs.Width, lhs.Y - rhs.Height); }
 
-	template<typename T>
-	T Point<T>::length() const { return sqrt((pow(X, 2) + pow(Y, 2))); }
+		Point operator*(const Point& lhs, const Size& rhs) { return Point(lhs.X * rhs.Width, lhs.Y * rhs.Height); }
 
-	template<typename T>
-	Point<T> Point<T>::magnitude() const { T len{ length() }; return Point<T>{ X / len, Y / len}; }
+		Point operator/(const Point& lhs, const Size& rhs) { return Point(lhs.X / rhs.Width, lhs.Y / rhs.Height); }
 
-	template<typename T>
-	T Point<T>::area() const { return X * Y; }
+		#pragma endregion
 
-	template<typename T>
-	bool operator ==(const Point<T>& lhs, const Point<T>& rhs) { return (lhs.X == rhs.X && lhs.Y == rhs.Y); }
+		#pragma region Assignment Operators
 
-	template<typename T>
-	bool operator !=(const Point<T>& lhs, const Point<T>& rhs) { return (lhs.X != rhs.X || lhs.Y != rhs.Y); }
+		Point& Point::operator+=(const Point& rhs) { X += rhs.X; Y += rhs.Y; return *this; }
 
-	//Point<uint64_t> Point<uint64_t>::operator+(const Point<uint64_t>& rhs) { return Point<uint64_t>(X + rhs.X, Y + rhs.Y); }
+		Point& Point::operator-=(const Point& rhs) { X -= rhs.X; Y -= rhs.Y; return *this; }
 
-	//Point<float>& Point<float>::operator+=(const Point<float>& rhs) { X += rhs.X; Y += rhs.Y; return *this; }
+		Point& Point::operator*=(const Point& lhs) { X *= lhs.X; Y *= lhs.Y; return *this; }
 
-	//Point<float>::Point<float>(const Point<float>& p) : X(p.X), Y(p.Y) { }
+		Point& Point::operator/=(const Point& lhs) { X /= lhs.X; Y /= lhs.Y; return *this; }
 
-	//Point<float>::Point<float>(float x, float y) : X(x), Y(y) { }
+		Point& Point::operator*=(point_t scalar) { X *= scalar; Y *= scalar; return *this; }
 
-	//Point<int>::Point<int>(int x, int y) : X(x), Y(y) { }
+		Point& Point::operator/=(point_t scalar) { X /= scalar; Y /= scalar; return *this; }
+
+		#pragma endregion
+
+		#pragma region Utility Functions
+
+		point_t Point::Length() const { return sqrt((pow(X, 2) + pow(Y, 2))); }
+
+		Point Point::Magnitude() const { point_t len{ Length() }; return Point{ X / len, Y / len}; }
+
+		Point::operator std::string() const { return std::format("({}, {})", X, Y); }
+
+		Coord Point::ToCoord(int64_t z) const { return { X, Y, z }; }
+
+		#pragma endregion
+
+		#pragma region Equality Operators
+
+		bool operator ==(const Point& lhs, const Point& rhs) { return (lhs.X == rhs.X && lhs.Y == rhs.Y); }
+
+		bool operator !=(const Point& lhs, const Point& rhs) { return (lhs.X != rhs.X || lhs.Y != rhs.Y); }
+
+		#pragma endregion
 }

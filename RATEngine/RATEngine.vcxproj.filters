@@ -19,6 +19,24 @@
     <Filter Include="Assets\Glyphs">
       <UniqueIdentifier>{174a903a-0bc1-418c-9e87-cf7b63726f89}</UniqueIdentifier>
     </Filter>
+    <Filter Include="Header Files\Structs">
+      <UniqueIdentifier>{eb244603-a5af-43d4-a005-0e551035c62d}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Source Files\Structs">
+      <UniqueIdentifier>{1b845086-1925-48bf-b86d-794d7975d49b}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Header Files\Objects">
+      <UniqueIdentifier>{36b84a9d-4b4e-4005-a4fe-9b07aae30a57}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Source Files\Objects">
+      <UniqueIdentifier>{a5e4c1e6-61ff-4979-8b94-86c99f8e6735}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Header Files\Interfaces">
+      <UniqueIdentifier>{6a5039ab-89a4-42b7-9aae-964996e832cc}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Source Files\Interfaces">
+      <UniqueIdentifier>{7b361a38-0271-402b-98f0-8d8a46ef0968}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <None Include="packages.config" />
@@ -35,100 +53,124 @@
     </Image>
   </ItemGroup>
   <ItemGroup>
-    <ClCompile Include="src\actor.cpp">
-      <Filter>Source Files</Filter>
-    </ClCompile>
-    <ClCompile Include="src\cell.cpp">
-      <Filter>Source Files</Filter>
-    </ClCompile>
-    <ClCompile Include="src\coord.cpp">
-      <Filter>Source Files</Filter>
-    </ClCompile>
-    <ClCompile Include="src\engine.cpp">
-      <Filter>Source Files</Filter>
-    </ClCompile>
-    <ClCompile Include="src\glyph.cpp">
-      <Filter>Source Files</Filter>
-    </ClCompile>
-    <ClCompile Include="src\glyph_set.cpp">
-      <Filter>Source Files</Filter>
-    </ClCompile>
-    <ClCompile Include="src\grid.cpp">
-      <Filter>Source Files</Filter>
-    </ClCompile>
-    <ClCompile Include="src\map.cpp">
-      <Filter>Source Files</Filter>
-    </ClCompile>
-    <ClCompile Include="src\mt_engine.cpp">
-      <Filter>Source Files</Filter>
-    </ClCompile>
-    <ClCompile Include="src\point.cpp">
-      <Filter>Source Files</Filter>
-    </ClCompile>
     <ClCompile Include="src\program.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="src\program_old.cpp">
-      <Filter>Source Files</Filter>
+    <ClCompile Include="src\actor.cpp">
+      <Filter>Source Files\Objects</Filter>
     </ClCompile>
-    <ClCompile Include="src\rect.cpp">
-      <Filter>Source Files</Filter>
+    <ClCompile Include="src\cell.cpp">
+      <Filter>Source Files\Objects</Filter>
     </ClCompile>
-    <ClCompile Include="src\transform.cpp">
-      <Filter>Source Files</Filter>
+    <ClCompile Include="src\engine.cpp">
+      <Filter>Source Files\Objects</Filter>
     </ClCompile>
-    <ClCompile Include="src\utility.cpp">
-      <Filter>Source Files</Filter>
+    <ClCompile Include="src\glyph_set.cpp">
+      <Filter>Source Files\Objects</Filter>
+    </ClCompile>
+    <ClCompile Include="src\grid.cpp">
+      <Filter>Source Files\Objects</Filter>
+    </ClCompile>
+    <ClCompile Include="src\map.cpp">
+      <Filter>Source Files\Objects</Filter>
+    </ClCompile>
+    <ClCompile Include="src\mt_engine.cpp">
+      <Filter>Source Files\Objects</Filter>
     </ClCompile>
     <ClCompile Include="src\zone.cpp">
+      <Filter>Source Files\Objects</Filter>
+    </ClCompile>
+    <ClCompile Include="src\alignment.cpp">
+      <Filter>Source Files\Structs</Filter>
+    </ClCompile>
+    <ClCompile Include="src\bounds.cpp">
+      <Filter>Source Files\Structs</Filter>
+    </ClCompile>
+    <ClCompile Include="src\color.cpp">
+      <Filter>Source Files\Structs</Filter>
+    </ClCompile>
+    <ClCompile Include="src\coord.cpp">
+      <Filter>Source Files\Structs</Filter>
+    </ClCompile>
+    <ClCompile Include="src\glyph.cpp">
+      <Filter>Source Files\Structs</Filter>
+    </ClCompile>
+    <ClCompile Include="src\point.cpp">
+      <Filter>Source Files\Structs</Filter>
+    </ClCompile>
+    <ClCompile Include="src\rect.cpp">
+      <Filter>Source Files\Structs</Filter>
+    </ClCompile>
+    <ClCompile Include="src\size.cpp">
+      <Filter>Source Files\Structs</Filter>
+    </ClCompile>
+    <ClCompile Include="src\transform.cpp">
+      <Filter>Source Files\Structs</Filter>
+    </ClCompile>
+    <ClCompile Include="constants.cpp">
       <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="src\cursor.cpp">
+      <Filter>Source Files\Objects</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="include\actor.hpp">
-      <Filter>Header Files</Filter>
+      <Filter>Header Files\Objects</Filter>
     </ClInclude>
     <ClInclude Include="include\cell.hpp">
-      <Filter>Header Files</Filter>
+      <Filter>Header Files\Objects</Filter>
+    </ClInclude>
+    <ClInclude Include="include\engine.hpp">
+      <Filter>Header Files\Objects</Filter>
+    </ClInclude>
+    <ClInclude Include="include\glyph_set.hpp">
+      <Filter>Header Files\Objects</Filter>
+    </ClInclude>
+    <ClInclude Include="include\grid.hpp">
+      <Filter>Header Files\Objects</Filter>
+    </ClInclude>
+    <ClInclude Include="include\map.hpp">
+      <Filter>Header Files\Objects</Filter>
+    </ClInclude>
+    <ClInclude Include="include\mt_engine.hpp">
+      <Filter>Header Files\Objects</Filter>
+    </ClInclude>
+    <ClInclude Include="include\zone.hpp">
+      <Filter>Header Files\Objects</Filter>
+    </ClInclude>
+    <ClInclude Include="include\alignment.hpp">
+      <Filter>Header Files\Structs</Filter>
+    </ClInclude>
+    <ClInclude Include="include\bounds.hpp">
+      <Filter>Header Files\Structs</Filter>
+    </ClInclude>
+    <ClInclude Include="include\color.hpp">
+      <Filter>Header Files\Structs</Filter>
+    </ClInclude>
+    <ClInclude Include="include\coord.hpp">
+      <Filter>Header Files\Structs</Filter>
+    </ClInclude>
+    <ClInclude Include="include\glyph.hpp">
+      <Filter>Header Files\Structs</Filter>
+    </ClInclude>
+    <ClInclude Include="include\point.hpp">
+      <Filter>Header Files\Structs</Filter>
+    </ClInclude>
+    <ClInclude Include="include\rect.hpp">
+      <Filter>Header Files\Structs</Filter>
+    </ClInclude>
+    <ClInclude Include="include\size.hpp">
+      <Filter>Header Files\Structs</Filter>
+    </ClInclude>
+    <ClInclude Include="include\transform.hpp">
+      <Filter>Header Files\Structs</Filter>
     </ClInclude>
     <ClInclude Include="include\constants.hpp">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="include\coord.hpp">
-      <Filter>Header Files</Filter>
-    </ClInclude>
-    <ClInclude Include="include\engine.hpp">
-      <Filter>Header Files</Filter>
-    </ClInclude>
-    <ClInclude Include="include\glyph.hpp">
-      <Filter>Header Files</Filter>
-    </ClInclude>
-    <ClInclude Include="include\glyph_set.hpp">
-      <Filter>Header Files</Filter>
-    </ClInclude>
-    <ClInclude Include="include\grid.hpp">
-      <Filter>Header Files</Filter>
-    </ClInclude>
-    <ClInclude Include="include\map.hpp">
-      <Filter>Header Files</Filter>
-    </ClInclude>
-    <ClInclude Include="include\mt_engine.hpp">
-      <Filter>Header Files</Filter>
-    </ClInclude>
-    <ClInclude Include="include\point.hpp">
-      <Filter>Header Files</Filter>
-    </ClInclude>
-    <ClInclude Include="include\rect.hpp">
-      <Filter>Header Files</Filter>
-    </ClInclude>
-    <ClInclude Include="include\transform.hpp">
-      <Filter>Header Files</Filter>
-    </ClInclude>
-    <ClInclude Include="include\utility.hpp">
-      <Filter>Header Files</Filter>
-    </ClInclude>
-    <ClInclude Include="include\zone.hpp">
-      <Filter>Header Files</Filter>
+    <ClInclude Include="include\cursor.hpp">
+      <Filter>Header Files\Objects</Filter>
     </ClInclude>
   </ItemGroup>
 </Project>

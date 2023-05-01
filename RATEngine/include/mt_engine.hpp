@@ -1,30 +1,53 @@
-#ifndef MT_ENGINE_H
+#pragma once
 
-#define MT_ENGINE_H
 #include <random>
+#include <cstdint>
 
-class MTEngine
+namespace rat
 {
-public:
-	MTEngine();
-	MTEngine(size_t seed);
+	namespace Random
+	{
+		class MTEngine
+		{
+		public:
 
-	void Seed();
-	void Seed(size_t seed);
+			// Constructor with random seed and specified distribution
+			MTEngine();
 
-	// Generates a random integer between min and max
-	int Next(int min, int max);
-	// Generates a random bool of true or false
-	bool NextBool();
-	// Generates a random float between min and max
-	float NextFloat(float min, float max);
+			// Constructor with specified seed and distribution
+			MTEngine(uint64_t seed);
 
-private:
-	// A random device used for generating unique seeds
-	std::random_device m_Generator;
+			// Destructor
+			~MTEngine();
 
-	// A random generator used for returning various types
-	std::mt19937 m_Twister;
-};
+			void Seed();
+			void Seed(uint64_t seed);
 
-#endif
+			// Generates a random integer between min and max
+			int Next(int min, int max);
+			// Generates a random bool of true or false
+			bool NextBool();
+			// Generates a random bool of true or false given a weight
+			bool NextBool(double weight);
+			// Generates a random float between min and max
+			float NextFloat(float min, float max);
+
+		private:
+			// Pointer to the random device used to seed the engine
+			std::random_device* ptr_Generator;
+
+			// Pointer to the engine
+			std::mt19937_64* ptr_Twister;
+		};
+
+		extern MTEngine* Generator;
+		extern bool m_Initialized;
+
+		void Initialize();
+		void Initialize(uint64_t seed);
+
+		bool Initialized();
+
+		void Close();
+	}
+}

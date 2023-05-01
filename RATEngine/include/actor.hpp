@@ -1,8 +1,7 @@
-#ifndef ACTOR_HPP
-#define ACTOR_HPP
+#pragma once
 
-#include "utility.hpp"
 #include "glyph.hpp"
+#include "constants.hpp"
 
 namespace rat
 {
@@ -13,19 +12,13 @@ namespace rat
 	class Actor
 	{
 	public:
-		Actor(std::string name, Glyph glyph, Cell* startingCell, bool isPlayer = false);
+		Actor(std::string name, Glyph glyph, Cell* startingCell);
 
-		virtual void Act(int x, int y, Map& map);
-		virtual void Draw(const GlyphSet& glyphSet) const;
+		virtual void Act(const Coord& position, Map& map);
+		virtual void Draw(const GlyphSet& glyphSet, const Point& offset) const;
 
-		Cell* GetOccupiedCell()
-		{
-			return m_CurrentCell;
-		}
-		raylib::Vector2 GetPosition()
-		{
-			return m_Position;
-		}
+		Cell* GetResidency() { return m_Residency; }
+		Coord GetPosition() { return m_Position; }
 
 	protected:
 		virtual void Move(Cell* to);
@@ -43,11 +36,9 @@ namespace rat
 		float m_Accuracy;
 		float m_Dodge;
 
-		Position m_Position;
-		Cell* m_CurrentCell;
+		Coord m_Position;
+		Cell* m_Residency;
 
 		Glyph m_Glyph;
 	};
 }
-
-#endif

@@ -1,25 +1,35 @@
 #include "cell.hpp"
 #include "actor.hpp"
 
-Cell::Cell(raylib::Vector2 position, Glyph wall, Glyph floor, bool solid, bool opaque)
-	: m_Position(position), m_Wall(wall), m_Floor(floor), m_Solid(solid), m_Opaque(opaque)
+#include "transform.hpp"
+
+namespace rat
 {
+	Cell::Cell(const Coord& pos, Glyph wall, Glyph floor, bool solid, bool opaque)
+		: m_Position(pos), m_Wall(wall), m_Floor(floor), m_Solid(solid), m_Opaque(opaque)
+	{
 
-}
+	}
 
-void Cell::Draw(const GlyphType& glyphType, const raylib::Vector2 screenPosition, bool drawOccupant) const
-{
-	if (m_Solid)
-		glyphType.DrawGlyph(
-			{ wallGlyph, m_Bloody ? CRIMSON : MARBLE },
-			raylib::Rectangle(m_Position.x * glyphWidth + screenPosition.x, m_Position.y * glyphHeight + screenPosition.y, glyphWidth, glyphHeight)
-		);
-	else
-		glyphType.DrawGlyph(
-			{ floorGlyph, m_Bloody ? CRIMSON : CHARCOAL },
-			raylib::Rectangle(m_Position.x * glyphWidth + screenPosition.x, m_Position.y * glyphHeight + screenPosition.y, glyphWidth, glyphHeight)
-		);
+	void Cell::Update(const Coord& pos, Glyph wall, Glyph floor, bool solid, bool opaque)
+	{
+		m_Position = pos; m_Wall = wall; m_Floor = floor; m_Solid = solid; m_Opaque = opaque;
+	}
 
-	if (m_Occupant != nullptr && drawOccupant)
-		m_Occupant->Draw(glyphType, screenPosition);
+	void Cell::Draw(const GlyphSet& glyphSet, const Point& screenPosition, bool drawOccupant) const
+	{
+		if (m_Solid)
+			glyphSet.DrawGlyph(
+				{ m_Wall.index, m_Bloody ? Colors::Materials::Blood : m_Wall.color },
+				Rect(m_Position.X * glyphSize.Width + screenPosition.X, m_Position.Y * glyphSize.Height + screenPosition.Y, glyphSize.Width, glyphSize.Height)
+			);
+		else
+			glyphSet.DrawGlyph(
+				{ m_Floor.index, m_Bloody ? Colors::Materials::Blood : m_Floor.color },
+				Rect(m_Position.X * glyphSize.Width + screenPosition.X, m_Position.Y * glyphSize.Height + screenPosition.Y, glyphSize.Width, glyphSize.Height)
+			);
+
+		if (m_Occupant != nullptr && drawOccupant)
+			m_Occupant->Draw(glyphSet, screenPosition);
+	}
 }

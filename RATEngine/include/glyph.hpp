@@ -1,23 +1,13 @@
-#ifndef GLYPH_H
+#pragma once
 
-#define GLYPH_H
-#include <raylib-cpp.hpp>
+#include <cstdint>
+#include "color.hpp"
 
-class Glyph
+namespace rat
 {
-public:
-	Glyph(size_t index, raylib::Color color = WHITE);
-
-	size_t GetIndex() const
-	{ return m_Index; }
-
-	raylib::Color GetColor() const
-	{ return m_Color; }
-
-private:
-	size_t m_Index;
-	raylib::Color m_Color;
-
-};
-
-#endif
+	struct Glyph
+	{
+		uint8_t index;
+		Color color;
+	};
+}

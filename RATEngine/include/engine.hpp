@@ -2,10 +2,21 @@
 
 #include <iostream>
 #include <string>
-#include "utility.hpp"
 
 #include <SDL2/SDL.h>
 #include <SDL2/SDL_image.h>
+
+#include "constants.hpp"
+
+#include "rect.hpp"
+#include "transform.hpp"
+
+#include "mt_engine.hpp"
+
+#include "actor.hpp"
+#include "map.hpp"
+
+#include "cursor.hpp"
 
 namespace rat
 {
@@ -14,7 +25,7 @@ namespace rat
 	class Engine
 	{
 	public:
-		Engine(const Size& gridSize, const std::string& path, const Size& glyphSize);
+		Engine(uint64_t seed = 1333333333337);
 		~Engine();
 
 		void ToggleFullscreen() { m_Fullscreen = !m_Fullscreen; }
@@ -26,22 +37,27 @@ namespace rat
 	protected:
 		void SetDrawColor(const Color& color);
 
-		void DrawRect(const Transform& transform, const Size& scale_by = { 1, 1 }, bool fill = false);
-		void DrawRect(const Position& position, const Size& size, const Size& scale_by = { 1, 1 }, bool fill = false);
+		void DrawRect(const Rect& transform, const Size& scale_by = { 1, 1 }, bool fill = false);
+		void DrawRect(const Point& position, const Size& size, const Size& scale_by = { 1, 1 }, bool fill = false);
 		void DrawRect(int x, int y, int width, int height, const Size& scale_by = { 1, 1 }, bool fill = false);
 
-		void DrawText(const std::string& text, const Position& position, const TextAlignment& alignment, const Color& color);
-		void DrawLabel(const std::string& text, const Position& position, const Size& padding, const TextAlignment& alignment, const Color& color);
+		void DrawText(const std::string& text, const Point& position, const TextAlignment& alignment, const Color& color);
+		void DrawLabel(const std::string& text, const Point& position, const Size& padding, const TextAlignment& alignment, const Color& color);
 
 	private:
-		Engine() = delete;
-
 		bool m_Fullscreen;
-
-		Size m_GridSize;
 
 		SDL_Window* ptr_Window;
 		SDL_Renderer* ptr_Renderer;
+
+		Cursor* m_Cursor;
+
+		Actor* ptr_Player;
+		Map* ptr_Map;
+
+		bool m_Locked;
+
+		unsigned short m_FPS;
 
 		GlyphSet* ptr_GlyphSet;
 	};

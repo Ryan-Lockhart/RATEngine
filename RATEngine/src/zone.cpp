@@ -1,3 +1,4 @@
+/*
 #include "zone.hpp"
 #include "mt_engine.hpp"
 #include <stdexcept>
@@ -95,3 +96,4 @@ const Cell& Zone::GetCell(size_t x, size_t y) const
 		throw (e.what());
 	}
 }
+*/

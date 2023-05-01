@@ -1,45 +1,52 @@
-#ifndef MAP_H
-
-#define MAP_H
+#pragma once
 
 #include "constants.hpp"
-#include <raylib-cpp.hpp>
 
-class GlyphType;
-
-class Map
+namespace rat
 {
-public:
-	Map();
-	~Map();
+	class GlyphSet;
 
-	void Move(raylib::Vector2 position, bool offset = true);
+	class Map
+	{
+	public:
+		Map();
+		~Map();
 
-	void Generate();
-	void Smooth(size_t iterations = 5);
-	int Automatize(solids_t* solids, size_t posX, size_t posY) const;
+		void Move(const Point& position, bool offset = true);
 
-	void Populate();
+		void Generate();
+		void Smooth();
+		int Automatize(solids_t* solids, const Coord& position) const;
 
-	Cell* FindOpen(float checkPercent = 0.5f);
-	Cell* GetCell(size_t x, size_t y)
-	{ return m_Cells->at(x).at(y); }
+		void Populate();
+		void Update();
 
-	const solids_t& GetSolids() const;
-	const raylib::Vector2 GetPosition() const
-	{ return m_Position; }
+		Cell*& FindOpen(float checkPercent = 0.5f) const;
 
-	void CenterOn(raylib::Vector2 position);
+		Cell*& GetCell(const Coord& position) const { return IsValid(position) ? m_Cells->at(position.Z * worldBounds.Area() + position.Y * worldBounds.Width + position.X) : throw("Position out of range!"); }
+		Cell*& GetCell(const Coord& position) { return IsValid(position) ? m_Cells->at(position.Z * worldBounds.Area() + position.Y * worldBounds.Width + position.X) : throw("Position out of range!"); }
 
-	void Draw(const GlyphType& glyphType) const;
+		void SetCell(const Coord& position, Cell* cell) { m_Cells->at(position.Z * worldBounds.Area() + position.Y * worldBounds.Width + position.X) = IsValid(position) ? cell : throw("Position out of range!"); }
 
-private:
-	solids_t* m_Solids;
-	cells_t* m_Cells;
+		bool IsSolid(const Coord& position, solids_t* solids) const { return IsValid(position) ? solids->at(position.Z * worldBounds.Area() + position.Y * worldBounds.Width + position.X) : true; }
+		void SetSolid(const Coord& position, bool solidity, solids_t* solids) { solids->at(position.Z * worldBounds.Area() + position.Y * worldBounds.Width + position.X) = IsValid(position) ? solidity : throw("Position out of range!"); }
 
-	raylib::Vector2 m_Position;
+		const solids_t& GetSolids() const { return *m_Solids; }
+		const Point& GetPosition() const { return m_Position; }
 
-	void ConstrainToScreen();
-};
+		void CenterOn(const Point& position);
 
-#endif
+		void Draw(const GlyphSet& glyphSet, int64_t drawDepth) const;
+
+		bool IsValid(const Coord& position) const;
+		bool WithinBounds(const Coord& position) const;
+
+	private:
+		solids_t* m_Solids;
+		cells_t* m_Cells;
+
+		Point m_Position;
+
+		void ConstrainToScreen();
+	};
+}

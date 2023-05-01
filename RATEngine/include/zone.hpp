@@ -1,27 +1,23 @@
-#ifndef ZONE_H
-
-#define ZONE_H
-
 #include "constants.hpp"
-#include "position.hpp"
 
 #include "cell.hpp"
 
-class Zone
+namespace rat
 {
-public:
-	Zone(Position position, const solids_t& solids);
-	~Zone();
+	class Zone
+	{
+	public:
+		Zone(const Coord& position, const solids_t& solids);
+		~Zone();
 
-	void Populate(const solids_t& solids);
-	const Cell* const FindOpen(bool& success) const;
+		void Populate(const solids_t& solids);
+		const Cell* const FindOpen(bool& success) const;
 
-	const Cell& GetCell(size_t x, size_t y) const;
-private:
-	Position m_Position;
+		const Cell& GetCell(size_t x, size_t y) const;
+	private:
+		Position m_Position;
 
-	cells_t* m_Cells;
-	std::vector<Cell*> m_OpenCells;
-};
-
-#endif
+		cells_t* m_Cells;
+		std::vector<Cell*> m_OpenCells;
+	};
+}

@@ -1,48 +1,58 @@
-#ifndef POSITION_H
+#pragma once
 
-#define POSITION_H
+#include <cstdint>
+#include <math.h>
+#include <string>
+#include <format>
 
 namespace rat
 {
-	template <typename T>
-	struct Point;
+	using point_t = int64_t;
 
-	/// <summary>
-	/// A two dimensional point in space
-	/// </summary>
-	/// <typeparam name="T">The type of the X and Y components</typeparam>
-	template <typename T>
+	struct Coord;
+	struct Size;
+
 	struct Point
 	{
-		Point<T>(T x, T y);
-		Point<T>(const Point<T>& point);
+		point_t X;
+		point_t Y;
 
-		T X;
-		T Y;
+		Point();
+		Point(point_t x, point_t y);
+		Point(const Point& point);
 
-		Point<T> operator +(const Point<T>& lhs);
-		Point<T> operator -(const Point<T>& lhs);
+		friend Point operator +(const Point& lhs, const Point& rhs);
+		friend Point operator -(const Point& lhs, const Point& rhs);
 
-		Point<T>& operator +=(const Point<T>& rhs);
-		Point<T>& operator -=(const Point<T>& rhs);
+		friend Point operator *(const Point& lhs, const Point& rhs);
+		friend Point operator /(const Point& lhs, const Point& rhs);
 
-		Point<T> operator *(const Point<T>& lhs);
-		Point<T> operator *(T scalar);
-		Point<T> operator /(const Point<T>& lhs);
-		Point<T> operator /(T scalar);
+		friend Point operator +(const Point& lhs, const Size& rhs);
+		friend Point operator -(const Point& lhs, const Size& rhs);
 
-		void operator *=(const Point<T>& lhs);
-		void operator *=(T scalar);
-		void operator /=(const Point<T>& lhs);
-		void operator /=(T scalar);
+		friend Point operator *(const Point& lhs, const Size& rhs);
+		friend Point operator /(const Point& lhs, const Size& rhs);
 
-		friend bool operator ==(const Point<T>& lhs, const Point<T>& rhs);
-		friend bool operator !=(const Point<T>& lhs, const Point<T>& rhs);
+		friend Point operator *(const Point& lhs, point_t scalar);
+		friend Point operator /(const Point& lhs, point_t scalar);
 
-		T length() const;
-		Point<T> magnitude() const;
-		T area() const;
+		Point& operator +=(const Point& rhs);
+		Point& operator -=(const Point& rhs);
+
+		Point& operator *=(const Point& lhs);
+		Point& operator /=(const Point& lhs);
+
+		Point& operator *=(point_t scalar);
+		Point& operator /=(point_t scalar);
+
+		friend bool operator ==(const Point& lhs, const Point& rhs);
+		friend bool operator !=(const Point& lhs, const Point& rhs);
+
+		point_t Length() const;
+		Point Magnitude() const;
+
+		Coord ToCoord(int64_t z) const;
+
+		operator std::string() const;
 	};
 }
-
-#endif
