@@ -18,8 +18,8 @@ namespace rat
 			{
 				m_GlyphRects.reserve(sheetSize.Area());
 
-				for (size_t y = 0; y < sheetSize.Height * glyphSize.Height; y += glyphSize.Height)
-					for (size_t x = 0; x < sheetSize.Width * glyphSize.Width; x += glyphSize.Width)
+				for (size_t y = 0; y < SheetSize().Height * glyphSize.Height; y += glyphSize.Height)
+					for (size_t x = 0; x < SheetSize().Width * glyphSize.Width; x += glyphSize.Width)
 						m_GlyphRects.push_back(new SDL_Rect{ (int)x, (int)y, (int)glyphSize.Width, (int)glyphSize.Height });
 			}
 			else throw(std::exception(SDL_GetError()));
