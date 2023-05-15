@@ -4,16 +4,29 @@
 #include "actor.hpp"
 #include "mt_engine.hpp"
 #include "glyph_set.hpp"
+#include "math.hpp"
+
 #include <stdexcept>
+#include <queue>
+#include <unordered_map>
+
+namespace std
+{
+	std::size_t hash<rat::Coord>::operator()(const rat::Coord& id) const noexcept
+	{
+		return std::hash<int>()(id.X ^ ((id.Y << 16) ^ (id.Z) << 32));
+	}
+}
 
 namespace rat
 {
-	Map::Map() :
-		m_Position({ 0, 0 })
+	Map::Map(const Bounds& bounds, const Bounds& border) :
+		m_Position({ 0, 0 }), m_Bounds(bounds), m_Border(border)
 	{
-		m_Solids = new solids_t(worldBounds.Volume(), false);
-		m_Cells = new cells_t(worldBounds.Volume(), nullptr);
+		m_Solids = new solids_t(bounds.Volume(), false);
+		m_Cells = new cells_t(bounds.Volume(), nullptr);
 	}
+
 	Map::~Map()
 	{
 		delete m_Solids;
@@ -26,81 +39,70 @@ namespace rat
 
 	void Map::Move(const Point& position, bool offset)
 	{
-		if (offset) { m_Position += position * glyphSize; }
-		else { m_Position = position * glyphSize; }
+		if (offset) { m_Position += position; }
+		else { m_Position = position; }
 
 		ConstrainToScreen();
 	}
 
-	void Map::ConstrainToScreen()
+	uint8_t Map::GetNeighbourCount(const Coord& position) const
 	{
-		if (m_Position.X > 0)
-			m_Position.X = 0;
-		else if (m_Position.X < (worldBounds.Width * -(int64_t)glyphSize.Width) + windowSize.Width)
-			m_Position.X = (worldBounds.Width * -(int64_t)glyphSize.Width) + windowSize.Width;
+		uint8_t neighbourCount(0);
 
-		if (m_Position.Y > 0)
-			m_Position.Y = 0;
-		else if (m_Position.Y < -(worldBounds.Height * (int64_t)glyphSize.Height) + windowSize.Height)
-			m_Position.Y = -(worldBounds.Height * (int64_t)glyphSize.Height) + windowSize.Height;
+		for (int y_offset = -1; y_offset <= 1; y_offset++)
+			for (int x_offset = -1; x_offset <= 1; x_offset++)
+			{
+				Coord currentPosition{ position.X + x_offset, position.Y + y_offset, position.Z };
+
+				if (currentPosition != position)
+					neighbourCount += IsValid(currentPosition) ? GetCell(currentPosition)->IsSolid() : 1;
+			}
+
+		return neighbourCount;
 	}
 
-	void Map::Generate()
+	void Map::ConstrainToScreen()
 	{
-		for (int64_t z = 0; z < worldBounds.Depth; z++)
-			for (int64_t y = 0; y < worldBounds.Height; y++)
-				for (int64_t x = 0; x < worldBounds.Width; x++)
+		if (m_Position.X < 0)
+			m_Position.X = 0;
+		else if (m_Position.X > m_Bounds.Width - displayRect.size.Width)
+			m_Position.X = m_Bounds.Width - displayRect.size.Width;
+
+		if (m_Position.Y < 0)
+			m_Position.Y = 0;
+		else if (m_Position.Y > m_Bounds.Height - displayRect.size.Height)
+			m_Position.Y = m_Bounds.Height - displayRect.size.Height;
+	}
+
+	void Map::Generate(float fillPercent)
+	{
+		m_Generating = true;
+
+		for (int64_t z = 0; z < m_Bounds.Depth; z++)
+			for (int64_t y = 0; y < m_Bounds.Height; y++)
+				for (int64_t x = 0; x < m_Bounds.Width; x++)
 				{
-					if (x >= 0 || y >= 0 || z >= 0 || x < worldBounds.Width || y < worldBounds.Height || z < worldBounds.Depth)
-					{
-						bool withinMapBorder (
-							x >= borderSize.Width
-							&& y >= borderSize.Height
-							&& (z >= borderSize.Depth || worldBounds.Depth == 1)
-							&& x < worldBounds.Width - borderSize.Width
-							&& y < worldBounds.Height - borderSize.Width
-							&& (z < worldBounds.Depth - borderSize.Depth || worldBounds.Depth == 1)
-						);
+					Coord position{ x, y, z };
 
-						Coord position{ x, y, z };
-
-						SetSolid(position, withinMapBorder ? Random::Generator->NextBool(fillPercent) : true, m_Solids);
-					}
+					if (IsValid(position))
+						m_Solids->at(Index(position)) = WithinBounds(position) ? Random::Generator->NextBool(fillPercent) : true;
 				}
 	}
 
-	void Map::Smooth()
+	void Map::Smooth(int iterations, int threshold)
 	{
 		solids_t* smoothed(new solids_t(*m_Solids));
 
-		for (size_t i = 0; i < automataIterations; i++)
+		for (size_t i = 0; i < iterations; i++)
 		{
-			for (int64_t z = 0; z < worldBounds.Depth; z++)
-				for (int64_t y = 0; y < worldBounds.Height; y++)
-					for (int64_t x = 0; x < worldBounds.Width; x++)
+			for (int64_t z = 0; z < m_Bounds.Depth; z++)
+				for (int64_t y = 0; y < m_Bounds.Height; y++)
+					for (int64_t x = 0; x < m_Bounds.Width; x++)
 					{
 						Coord position{ x, y, z };
 
-						bool withinMapBorder(
-							x >= borderSize.Width
-							&& y >= borderSize.Height
-							&& (z >= borderSize.Depth || worldBounds.Depth == 1)
-							&& x < worldBounds.Width - borderSize.Width
-							&& y < worldBounds.Height - borderSize.Width
-							&& (z < worldBounds.Depth - borderSize.Depth || worldBounds.Depth == 1)
-						);
-
-						if (!withinMapBorder)
-							SetSolid(position, true, smoothed);
-						else
-						{
-							int neighbours = Automatize(m_Solids, position);
-
-							if (neighbours > automataThreshold)
-								SetSolid(position, true, smoothed);
-							else if (neighbours < automataThreshold)
-								SetSolid(position, false, smoothed);
-						}
+						if (IsValid(position))
+							smoothed->at(Index(position)) = WithinBounds(position) ? Automatize(position, threshold) : true;
 					}
 
 			std::swap(m_Solids, smoothed);
@@ -109,17 +111,18 @@ namespace rat
 		delete smoothed;
 	}
 
-	int Map::Automatize(solids_t* solids, const Coord& position) const
+	bool Map::Automatize(const Coord& position, int threshold) const
 	{
+		bool originalState(m_Solids->at(Index(position)));
+
 		int neighbours = 0;
 
-		bool isFlat(worldBounds.Depth == 1);
+		bool isFlat(m_Bounds.Depth == 1);
 
-		for (int64_t offset_z = -1; offset_z <= 1; offset_z++)
-		{
-			for (int64_t offset_y = -1; offset_y <= 1; offset_y++)
+		for (int64_t offset_z = isFlat ? 1 : -1; offset_z < 2; offset_z++)
+			for (int64_t offset_y = -1; offset_y < 2; offset_y++)
 			{
-				for (int64_t offset_x = -1; offset_x <= 1; offset_x++)
+				for (int64_t offset_x = -1; offset_x < 2; offset_x++)
 				{
 					if (offset_x != 0 || offset_y != 0 || (offset_z != 0 || isFlat))
 					{
@@ -130,54 +133,57 @@ namespace rat
 				}
 			}
 
-			if (isFlat)
-				return neighbours;
-		}
-
-		return neighbours;
+		return neighbours > threshold ? true : neighbours < threshold ? false : originalState;
 	}
 
 	void Map::Populate()
 	{
-		for (int64_t z = 0; z < worldBounds.Depth; z++)
-			for (int64_t y = 0; y < worldBounds.Height; y++)
-				for (int64_t x = 0; x < worldBounds.Width; x++)
+		for (int64_t z = 0; z < m_Bounds.Depth; z++)
+			for (int64_t y = 0; y < m_Bounds.Height; y++)
+				for (int64_t x = 0; x < m_Bounds.Width; x++)
 				{
 					Coord coord{ x, y, z };
 
 					bool solid = IsSolid(coord, m_Solids);
 
-					Cell*& cell = GetCell(coord);
-					cell = new Cell(coord, Glyphs::ASCII::Wall, Glyphs::ASCII::Floor, solid, solid);
+					if (GetCell(coord) != nullptr)
+						m_Cells->at(Index(coord))->Reinitialize(coord, solid, solid);
+					else
+						m_Cells->at(Index(coord)) = new Cell(coord, this, solid, solid);
 				}
+
+		RecalculateIndices();
+
+		m_Generating = false;
 	}
 
-	void Map::Update()
+	void Map::Regenerate(float fillPercent, int iterations, int threshold)
 	{
-		for (int64_t z = 0; z < worldBounds.Depth; z++)
-			for (int64_t y = 0; y < worldBounds.Height; y++)
-				for (int64_t x = 0; x < worldBounds.Width; x++)
-				{
-					Coord coord{ x, y, z };
-
-					bool solid = IsSolid(coord, m_Solids);
-
-					Cell* cell = GetCell(coord);
-					if (cell != nullptr)
-						cell->Update(coord, Glyphs::ASCII::Wall, Glyphs::ASCII::Floor, solid, solid);
-				}
+		Generate(fillPercent);
+		Smooth(iterations, threshold);
+		Populate();
 	}
 
-	Cell*& Map::FindOpen(float checkPercent) const
+	void Map::RecalculateIndices()
 	{
-		int maxChecks = worldBounds.Volume() * checkPercent;
+		for (auto& cell : *m_Cells)
+			if (cell != nullptr)
+			{
+				cell->SetDirty();
+				cell->Update();
+			}
+	}
+
+	Cell* Map::FindOpen(float checkPercent) const
+	{
+		int maxChecks = m_Bounds.Volume() * checkPercent;
 		int checks(0);
 
 		while (checks < maxChecks)
 		{
-			int64_t x(Random::Generator->Next(0, worldBounds.Width - 1));
-			int64_t y(Random::Generator->Next(0, worldBounds.Height - 1));
-			int64_t z(Random::Generator->Next(0, worldBounds.Depth - 1));
+			int64_t x(Random::Generator->Next(0, m_Bounds.Width - 1));
+			int64_t y(Random::Generator->Next(0, m_Bounds.Height - 1));
+			int64_t z(Random::Generator->Next(0, m_Bounds.Depth - 1));
 
 			Coord randomPos{ x, y, z };
 
@@ -195,32 +201,568 @@ namespace rat
 		throw("No open cells!");
 	}
 
-	void Map::CenterOn(const Point& position)
+	void Map::ResetSeen()
 	{
-		m_Position.X = position.X * -(int64_t)glyphSize.Width + (int64_t)windowSize.Width / 2;
-		m_Position.Y = position.Y * -(int64_t)glyphSize.Height + (int64_t)windowSize.Height / 2;
+		for (int64_t z = 0; z < m_Bounds.Depth; z++)
+			for (int64_t y = 0; y < m_Bounds.Height; y++)
+				for (int64_t x = 0; x < m_Bounds.Width; x++)
+				{
+					Coord position{ x, y, z };
+
+					GetCell(position)->Unsee();
+				}
+	}
+
+	void Map::RevealMap()
+	{
+		for (int64_t z = 0; z < m_Bounds.Depth; z++)
+			for (int64_t y = 0; y < m_Bounds.Height; y++)
+				for (int64_t x = 0; x < m_Bounds.Width; x++)
+				{
+					Coord position{ x, y, z };
+
+					GetCell(position)->See();
+					GetCell(position)->Explore();
+				}
+	}
+
+	void Map::CenterOn(const Coord& position)
+	{
+		if (!IsValid(position))
+			return;
+
+		m_Position.X = position.X - displayRect.size.Width / 2;
+		m_Position.Y = position.Y - displayRect.size.Height / 2;
 
 		ConstrainToScreen();
 	}
 
-	void Map::Draw(const GlyphSet& glyphSet, int64_t drawDepth) const
+	void Map::Draw(const GlyphSet& glyphSet, int64_t drawDepth, const Point& offset) const
 	{
-		for (int64_t y = 0; y < worldBounds.Height; y++)
-			for (int64_t x = 0; x < worldBounds.Width; x++)
+		if (drawDepth < 0 || drawDepth > m_Bounds.Depth)
+			return;
+
+		for (int64_t y = m_Position.Y; y < m_Position.Y + displayRect.size.Height; y++)
+			for (int64_t x = m_Position.X; x < m_Position.X + displayRect.size.Width; x++)
 			{
 				Coord cellCoord{ x, y, drawDepth };
 
-				GetCell(cellCoord)->Draw(glyphSet, m_Position);
+				Cell* cell = GetCell(cellCoord);
+
+				if (cell != nullptr)
+					cell->Draw(glyphSet, m_Position - offset, true);
+				else glyphSet.DrawGlyph(m_Solids->at(Index(cellCoord)) ? Glyphs::ASCII::Wall : Glyphs::ASCII::Floor, Point{ m_Position.X + x, m_Position.Y + y } + offset);
 			}
 	}
 	bool Map::IsValid(const Coord& position) const
 	{
-		return position.X >= 0 && position.Y >= 0 && position.X < worldBounds.Width && position.Y < worldBounds.Height && position.Z >= 0 && position.Z < worldBounds.Depth;
+		return position.X >= 0 && position.Y >= 0 && position.X < m_Bounds.Width && position.Y < m_Bounds.Height && position.Z >= 0 && position.Z < m_Bounds.Depth;
 	}
 
 	bool Map::WithinBounds(const Coord& position) const
 	{
-		bool isFlat = worldBounds.Depth == 1;
-		return position.X >= borderSize.Width && position.Y >= borderSize.Height && position.X < worldBounds.Width - borderSize.Width && position.Y < worldBounds.Height - borderSize.Height && (position.Z >= borderSize.Depth || isFlat) && (position.Z < worldBounds.Depth - borderSize.Depth || isFlat);
+		bool isFlat = m_Bounds.Depth == 1;
+		return position.X >= m_Border.Width && position.Y >= m_Border.Height && position.X < m_Bounds.Width - m_Border.Width && position.Y < m_Bounds.Height - m_Border.Height && (position.Z >= m_Border.Depth || isFlat) && (position.Z < m_Bounds.Depth - m_Border.Depth || isFlat);
+	}
+
+	void Map::Update()
+	{
+		for (auto& cell : *m_Cells)
+			if (cell != nullptr) cell->Update();
+	}
+
+	std::vector<Coord> Map::CalculatePath(const Coord& origin, const Coord& destination)
+	{
+		std::queue<Coord> frontier;
+		frontier.push(origin);
+
+		std::unordered_map<Coord, Coord> came_from;
+		came_from[origin] = origin;
+
+		while (!frontier.empty())
+		{
+			Coord current = frontier.front();
+			frontier.pop();
+
+			if (current == destination) {
+				break;
+			}
+
+			auto neighbourhood = GetNeighbourhood(current);
+
+			for (int i = 0; i < neighbourhood.size(); i++)
+			{
+				bool solid = neighbourhood.at(i)->IsSolid();
+
+				if (came_from.find((*neighbourhood.at(i)).GetPosition()) == came_from.end() && !solid) {
+					frontier.push((*neighbourhood.at(i)).GetPosition());
+					came_from[(*neighbourhood.at(i)).GetPosition()] = current;
+				}
+			}
+		}
+
+		std::vector<Coord> path;
+		Coord current = destination;
+		if (came_from.find(destination) == came_from.end()) {
+			return path;
+		}
+		while (current != origin) {
+			path.push_back(current);
+			current = came_from[current];
+		}
+		path.push_back(origin);
+		std::reverse(path.begin(), path.end());
+
+		return path;
+	}
+
+	std::vector<Cell*> Map::GetNeighbourhood(const Coord& position, bool returnNulls)
+	{
+		std::vector<Cell*> neighbourhood;
+
+		for (int y_offset = -1; y_offset <= 1; y_offset++)
+			for (int x_offset = -1; x_offset <= 1; x_offset++)
+			{
+				Coord currentPosition{ position.X + x_offset, position.Y + y_offset, position.Z };
+
+				if (currentPosition != position)
+					if (IsValid(currentPosition) || returnNulls)
+						neighbourhood.push_back(GetCell(currentPosition));
+			}
+
+		return neighbourhood;
+	}
+
+	void Map::CalculateFOV(const Coord& origin, double viewDistance)
+	{
+		ResetSeen();
+
+		viewDistance = std::max<double>(1, viewDistance);
+
+		Cell* cell = GetCell(origin);
+
+		if (cell != nullptr)
+		{
+			cell->See();
+			cell->Explore();
+		}
+
+		for (int i = 0; i < 8; i++)
+		{
+			ShadowCast(origin, 1, 1.0, 0.0, octants[i], viewDistance);
+		}
+	}
+
+	void Map::CalculateFOV(const Coord& origin, double viewDistance, double angle, double span)
+	{
+		ResetSeen();
+
+		viewDistance = std::max<double>(1, viewDistance);
+
+		angle = (angle > 360.0 || angle < 0.0 ? math::wrap_around(angle, 360.0) : angle) * math::deg_percent_of_circle;
+		span *= math::deg_percent_of_circle;
+
+		Cell* cell = GetCell(origin);
+
+		if (cell != nullptr)
+		{
+			auto neighbours = GetNeighbourhood(origin, false);
+
+			for (auto& neighbour : neighbours)
+				if (neighbour != nullptr)
+				{
+					neighbour->See();
+					neighbour->Explore();
+				}
+
+			cell->See();
+			cell->Explore();
+		}
+
+		for (int i = 0; i < 8; i++)
+		{
+			ShadowCastLimited(origin, 1, 1.0, 0.0, octants[i], viewDistance, angle, span);
+		}
+	}
+
+	void Map::CalculateFOV(const Coord& origin, double viewDistance, double angle, double span, double nudge)
+	{
+		ResetSeen();
+
+		Coord shiftedOrigin = nudge > 0 ?
+		Coord{
+			static_cast<coord_t>(origin.X + cos(math::deg_to_rad * angle) * -nudge),
+			origin.Y + static_cast<coord_t>(sin(math::deg_to_rad * angle) * -nudge),
+			origin.Z
+		} : origin;
+
+		viewDistance = std::max<double>(1, viewDistance);
+
+		angle = (angle > 360.0 || angle < 0.0 ? math::wrap_around(angle, 360.0) : angle) * math::deg_percent_of_circle;
+		span *= math::deg_percent_of_circle;
+
+		Cell* cell = GetCell(shiftedOrigin);
+
+		if (cell != nullptr)
+		{
+			auto neighbours = GetNeighbourhood(shiftedOrigin, false);
+
+			for (auto& neighbour : neighbours)
+				if (neighbour != nullptr)
+				{
+					neighbour->See();
+					neighbour->Explore();
+				}
+
+			cell->See();
+			cell->Explore();
+		}
+
+		for (int i = 0; i < 8; i++)
+		{
+			ShadowCastLimited(shiftedOrigin, 1, 1.0, 0.0, octants[i], viewDistance, angle, span);
+		}
+	}
+
+	std::vector<Coord> Map::WithinFOV(const Coord& origin, double viewDistance)
+	{
+		std::vector<Coord> fovVector;
+
+		viewDistance = std::max<double>(1, viewDistance);
+
+		Cell* cell = GetCell(origin);
+
+		if (cell != nullptr)
+		{
+			auto neighbours = GetNeighbourhood(origin, false);
+
+			for (auto& neighbour : neighbours)
+				if (neighbour != nullptr)
+					fovVector.push_back(neighbour->GetPosition());
+
+			fovVector.push_back(cell->GetPosition());
+		}
+		
+		for (int i = 0; i < 8; i++)
+		{
+			ShadowCast(origin, fovVector, 1, 1.0, 0.0, octants[i], viewDistance);
+		}
+
+		return fovVector;
+	}
+
+	std::vector<Coord> Map::WithinFOV(const Coord& origin, double viewDistance, double angle, double span)
+	{
+		std::vector<Coord> fovVector;
+
+		viewDistance = std::max<double>(1, viewDistance);
+
+		angle = (angle > 360.0 || angle < 0.0 ? math::wrap_around(angle, 360.0) : angle) * math::deg_percent_of_circle;
+		span *= math::deg_percent_of_circle;
+
+		Cell* cell = GetCell(origin);
+
+		if (cell != nullptr)
+		{
+			auto neighbours = GetNeighbourhood(origin, false);
+
+			for (auto& neighbour : neighbours)
+				if (neighbour != nullptr)
+					fovVector.push_back(neighbour->GetPosition());
+
+			fovVector.push_back(cell->GetPosition());
+		}
+
+		for (int i = 0; i < 8; i++)
+		{
+			ShadowCastLimited(origin, fovVector, 1, 1.0, 0.0, octants[i], viewDistance, angle, span);
+		}
+
+		return fovVector;
+	}
+
+	std::vector<Coord> Map::WithinFOV(const Coord& origin, double viewDistance, double angle, double span, double nudge)
+	{
+		std::vector<Coord> fovVector;
+
+		Coord shiftedOrigin = nudge > 0 ?
+			Coord{
+				static_cast<coord_t>(origin.X + cos(math::deg_to_rad * angle) * -nudge),
+				origin.Y + static_cast<coord_t>(sin(math::deg_to_rad * angle) * -nudge),
+				origin.Z
+		} : origin;
+
+		viewDistance = std::max<double>(1, viewDistance);
+
+		angle = (angle > 360.0 || angle < 0.0 ? math::wrap_around(angle, 360.0) : angle) * math::deg_percent_of_circle;
+		span *= math::deg_percent_of_circle;
+
+		Cell* cell = GetCell(shiftedOrigin);
+
+		if (cell != nullptr)
+		{
+			auto neighbours = GetNeighbourhood(shiftedOrigin, false);
+
+			for (auto& neighbour : neighbours)
+				if (neighbour != nullptr)
+					fovVector.push_back(neighbour->GetPosition());
+
+			fovVector.push_back(cell->GetPosition());
+		}
+
+		for (int i = 0; i < 8; i++)
+		{
+			ShadowCastLimited(shiftedOrigin, fovVector, 1, 1.0, 0.0, octants[i], viewDistance, angle, span);
+		}
+
+		return fovVector;
+	}
+
+	void Map::ShadowCast(const Coord& origin, int row, double start, double end, const Octant& octant, double radius)
+	{
+		double newStart = 0;
+
+		if (start < end)
+			return;
+
+		bool blocked = false;
+
+		for (double distance = row; distance <= radius && distance < m_Bounds.Area() && !blocked; distance++)
+		{
+			double deltaY = -distance;
+
+			for (double deltaX = -distance; deltaX <= 0; deltaX++)
+			{
+				Coord currentPosition{ static_cast<coord_t>(origin.X + deltaX * octant.x + deltaY * octant.dx), static_cast<coord_t>(origin.Y + deltaX * octant.y + deltaY * octant.dy), origin.Z };
+				Coord delta = currentPosition - origin;
+
+				double leftSlope = (deltaX - 0.5f) / (deltaY + 0.5f);
+				double rightSlope = (deltaX + 0.5f) / (deltaY - 0.5f);
+
+				if (!IsValid(currentPosition) || start < rightSlope)
+					continue;
+				if (end > leftSlope)
+					break;
+
+				double deltaRadius = math::normalize(deltaX, deltaY);
+
+				Cell* cell = GetCell(currentPosition);
+
+				if (cell != nullptr)
+				{
+					bool opaque = cell->IsOpaque();
+
+					if (deltaRadius <= radius)
+					{
+						cell->Explore();
+						cell->See();
+					}
+
+					if (blocked)
+					{
+						if (opaque)
+							newStart = rightSlope;
+						else
+						{
+							blocked = false;
+							start = newStart;
+						}
+					}
+					else if (opaque && distance < radius)
+					{
+						blocked = true;
+
+						ShadowCast(origin, distance + 1, start, leftSlope, octant, radius);
+
+						newStart = rightSlope;
+					}
+				}
+			}
+		}
+	}
+
+	void Map::ShadowCastLimited(const Coord& origin, int row, double start, double end, const Octant& octant, double radius, double angle, double span)
+	{
+		double newStart = 0;
+
+		if (start < end)
+			return;
+
+		bool blocked = false;
+
+		for (double distance = row; distance <= radius && distance < m_Bounds.Area() && !blocked; distance++)
+		{
+			double deltaY = -distance;
+
+			for (double deltaX = -distance; deltaX <= 0; deltaX++)
+			{
+				Coord currentPosition{ static_cast<coord_t>(origin.X + deltaX * octant.x + deltaY * octant.dx), static_cast<coord_t>(origin.Y + deltaX * octant.y + deltaY * octant.dy), origin.Z };
+				Coord delta = currentPosition - origin;
+
+				double leftSlope = (deltaX - 0.5f) / (deltaY + 0.5f);
+				double rightSlope = (deltaX + 0.5f) / (deltaY - 0.5f);
+
+				if (!IsValid(currentPosition) || start < rightSlope)
+					continue;
+				if (end > leftSlope)
+					break;
+
+				double deltaRadius = math::normalize(deltaX, deltaY);
+				double at2 = abs(angle - math::atan2_agnostic((double)delta.Y, (double)delta.X));
+
+				Cell* cell = GetCell(currentPosition);
+
+				if (cell != nullptr)
+				{
+					bool opaque = cell->IsOpaque();
+
+					if (deltaRadius <= radius && (at2 <= span * 0.5 || at2 >= 1.0 - span * 0.5))
+					{
+						cell->Explore();
+						cell->See();
+					}
+
+					if (blocked)
+					{
+						if (opaque)
+							newStart = rightSlope;
+						else
+						{
+							blocked = false;
+							start = newStart;
+						}
+					}
+					else if (opaque && distance < radius)
+					{
+						blocked = true;
+
+						ShadowCastLimited(origin, distance + 1, start, leftSlope, octant, radius, angle, span);
+
+						newStart = rightSlope;
+					}
+				}
+			}
+		}
+	}
+
+	void Map::ShadowCast(const Coord& origin, std::vector<Coord>& fovVector, int row, double start, double end, const Octant& octant, double radius)
+	{
+		double newStart = 0;
+
+		if (start < end)
+			return;
+
+		bool blocked = false;
+
+		for (double distance = row; distance <= radius && distance < m_Bounds.Area() && !blocked; distance++)
+		{
+			double deltaY = -distance;
+
+			for (double deltaX = -distance; deltaX <= 0; deltaX++)
+			{
+				Coord currentPosition{ static_cast<coord_t>(origin.X + deltaX * octant.x + deltaY * octant.dx), static_cast<coord_t>(origin.Y + deltaX * octant.y + deltaY * octant.dy), origin.Z };
+				Coord delta = currentPosition - origin;
+
+				double leftSlope = (deltaX - 0.5f) / (deltaY + 0.5f);
+				double rightSlope = (deltaX + 0.5f) / (deltaY - 0.5f);
+
+				if (!IsValid(currentPosition) || start < rightSlope)
+					continue;
+				if (end > leftSlope)
+					break;
+
+				double deltaRadius = math::normalize(deltaX, deltaY);
+
+				Cell* cell = GetCell(currentPosition);
+
+				if (cell != nullptr)
+				{
+					bool opaque = cell->IsOpaque();
+
+					if (deltaRadius <= radius)
+						fovVector.push_back(cell->GetPosition());
+
+					if (blocked)
+					{
+						if (opaque)
+							newStart = rightSlope;
+						else
+						{
+							blocked = false;
+							start = newStart;
+						}
+					}
+					else if (opaque && distance < radius)
+					{
+						blocked = true;
+
+						ShadowCast(origin, fovVector, distance + 1, start, leftSlope, octant, radius);
+
+						newStart = rightSlope;
+					}
+				}
+			}
+		}
+	}
+
+	void Map::ShadowCastLimited(const Coord& origin, std::vector<Coord>& fovVector, int row, double start, double end, const Octant& octant, double radius, double angle, double span)
+	{
+		double newStart = 0;
+
+		if (start < end)
+			return;
+
+		bool blocked = false;
+
+		for (double distance = row; distance <= radius && distance < m_Bounds.Area() && !blocked; distance++)
+		{
+			double deltaY = -distance;
+
+			for (double deltaX = -distance; deltaX <= 0; deltaX++)
+			{
+				Coord currentPosition{ static_cast<coord_t>(origin.X + deltaX * octant.x + deltaY * octant.dx), static_cast<coord_t>(origin.Y + deltaX * octant.y + deltaY * octant.dy), origin.Z };
+				Coord delta = currentPosition - origin;
+
+				double leftSlope = (deltaX - 0.5f) / (deltaY + 0.5f);
+				double rightSlope = (deltaX + 0.5f) / (deltaY - 0.5f);
+
+				if (!IsValid(currentPosition) || start < rightSlope)
+					continue;
+				if (end > leftSlope)
+					break;
+
+				double deltaRadius = math::normalize(deltaX, deltaY);
+				double at2 = abs(angle - math::atan2_agnostic((double)delta.Y, (double)delta.X));
+
+				Cell* cell = GetCell(currentPosition);
+
+				if (cell != nullptr)
+				{
+					bool opaque = cell->IsOpaque();
+
+					if (deltaRadius <= radius && (at2 <= span * 0.5 || at2 >= 1.0 - span * 0.5))
+						fovVector.push_back(cell->GetPosition());
+
+					if (blocked)
+					{
+						if (opaque)
+							newStart = rightSlope;
+						else
+						{
+							blocked = false;
+							start = newStart;
+						}
+					}
+					else if (opaque && distance < radius)
+					{
+						blocked = true;
+
+						ShadowCastLimited(origin, fovVector, distance + 1, start, leftSlope, octant, radius, angle, span);
+
+						newStart = rightSlope;
+					}
+				}
+			}
+		}
 	}
 }

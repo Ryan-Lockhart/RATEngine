@@ -9,45 +9,41 @@
 #include "coord.hpp"
 #include "bounds.hpp"
 
+#include "rect.hpp"
+#include "transform.hpp"
+
 #include "color.hpp"
 #include "glyph.hpp"
 #include "alignment.hpp"
 
+#include "actor.hpp"
+
+#include "octant.hpp"
+
 #include <list>
+#include <math.h>
 
 namespace rat
 {
 	extern std::list<std::string> messageLog;
-	constexpr int maxMessages = 2;
+	constexpr int maxMessages = 21;
 
-	constexpr float fillPercent = 0.4f;
-	constexpr size_t automataIterations = 10;
-	constexpr size_t automataThreshold = 4;
-
-	const Size glyphSize{ 12UL, 12UL };
-	const Size sheetSize{ 16UL, 16UL };
-
-	const std::string glyphSetPath{ "assets/glyphs/glyphs_12x12.png" };
-
-	const Size displaySize{ 110UL, 60UL };
-	const Size windowSize{ displaySize * glyphSize };
-
-	const uint8_t floorGlyph = 0xB0;
-	const uint8_t wallGlyph = 0xB2;
-	const uint8_t actorGlyph = 0x40;
-	const uint8_t bloodGlyph = 0xF7;
+	constexpr unsigned int minimumUpdateTime = 10000;
 
 	extern const char* windowTitle;
 
+	const Size sheetSize{ 16UL, 16UL };
+
+	const Rect titleBar{ { 0UL, 0UL }, { 128UL, 3UL } };
+	const Rect displayRect{ { 0UL, 3UL }, { 96UL, 42UL } };
+	const Rect messageWindow{ { 80UL, 8UL }, { 48UL, 48UL} };
+	const Rect leftSideBar{ { 0UL, 3UL }, { 3UL, 64UL } };
+	const Rect footerBar{ { 0UL, 64UL }, { 128UL, 3UL } };
+	const Size windowSize{ 96UL, 48UL };
+
 	const bool noclipMode = false;
 
-	const Bounds zoneBounds{ 32, 32, 1 };
-	const Bounds mapBounds{ 8, 8, 1 };
-	const Bounds worldBounds{ zoneBounds * mapBounds };
-
-	const Bounds borderSize{ 2, 2, 0 };
-
-	const int cameraSpeed = 10;
+	const int cameraSpeed = 5;
 
 	static std::string lastMessage("");
 
@@ -56,16 +52,34 @@ namespace rat
 	typedef std::vector<Cell*> cells_t;
 	typedef std::vector<bool> solids_t;
 
+	const Octant octants[8] =
+	{
+		Octant{ 0, 1, 1, 0 },
+		Octant{ 1, 0, 0, 1 },
+		Octant{ 0, -1, 1, 0 },
+		Octant{ -1, 0, 0, 1 },
+		Octant{ 0, -1, -1, 0 },
+		Octant{ -1, 0, 0, -1 },
+		Octant{ 0, 1, -1, 0 },
+		Octant{ 1, 0, 0, -1 }
+	};
+
+	// An organizational namespace containitng constant indexes for use with glyphs
 	namespace Characters
 	{
-		constexpr uint8_t Empty{ ' ' };
-		constexpr uint8_t Wall{ 0xB2 };
-		constexpr uint8_t Obstacle{ 0xB1 };
-		constexpr uint8_t Floor{ 0xB0 };
-		constexpr uint8_t Entity{ '@' };
+		constexpr uint8_t Empty{ 0x00 };
+		constexpr uint8_t Wall{ 0x4F };
+		constexpr uint8_t Obstacle{ 0x4E };
+		constexpr uint8_t Floor{ 0x4D };
+
+		constexpr uint8_t Entity{ 0x40 };
+		constexpr uint8_t Medkit{ 0x49 };
+		constexpr uint8_t Glock{ 0x4A };
+		constexpr uint8_t Ladder{ 0x4B };
+		constexpr uint8_t Corpse{ 0x4C };
 	}
 
-	// An organizational structure containitng initialized colors 
+	// An organizational namespace containitng constant colors 
 	namespace Colors
 	{
 		const Color Transperant{ 0, 0, 0, 0 };
@@ -78,7 +92,12 @@ namespace rat
 		const Color DarkGrey{ 64, 64, 64, 255 };
 
 		const Color Marble{ 240, 232, 232, 255 };
+		const Color DarkMarble{ 200, 192, 192, 255 };
+
+		const Color LightIntrite{ 132, 124, 124, 255 };
 		const Color Intrite{ 112, 104, 104, 255 };
+
+		const Color LightCharcoal{ 60, 58, 58, 255 };
 		const Color Charcoal{ 40, 32, 32, 255 };
 
 		const Color BrightRed{ 255, 0, 0, 255 };
@@ -109,10 +128,11 @@ namespace rat
 		const Color LightOrange{ 255, 165, 115, 255 };
 		const Color DarkOrange{ 200, 71, 0, 255 };
 
-		// These colors have been initialized to represent various real world materials
+		// Constant colors that represent various real world materials
 		namespace Materials
 		{
 			const Color Blood{ 157, 34, 53, 255 };
+			const Color DarkBlood{ 137, 14, 33, 255 };
 
 			const Color Ebony{ 40, 44, 52, 255 };
 			const Color Ivory{ 255, 255, 240, 255 };
@@ -122,7 +142,7 @@ namespace rat
 			const Color Birch{ 234, 225, 216, 255 };
 		}
 
-		// These colors have been initialized to represent various real world materials
+		// Constant colors that represent various real world metals
 		namespace Metals
 		{
 			const Color Iron{ 161, 157, 148, 255 };
@@ -140,21 +160,32 @@ namespace rat
 		}
 	}
 
-	// An organizational structure containitng initialized glyphs for use with glyph sets
+	// An organizational namespace containitng constant glyphs for use with glyph sets
 	namespace Glyphs
 	{
-		// These glyphs have been initialized for use with a 256 character ASCII glyph set
+		// These glyphs are for use with a 256 character ASCII glyph set
 		namespace ASCII
 		{
+			const Glyph Empty{ Characters::Empty, Colors::Transperant };
+
+			static const Glyph GetGlyph(bool solid, bool seen, bool bloody) 
+			{
+				Glyph glyph = Empty;
+
+				glyph.index = solid ? Characters::Wall : Characters::Floor;
+
+				if (bloody)
+					glyph.color = seen ? Colors::Materials::Blood : Colors::Materials::DarkBlood;
+				else glyph.color = seen ? (solid ? Colors::Marble : Colors::LightCharcoal) : (solid ? Colors::DarkMarble : Colors::Charcoal);
+
+				return glyph;
+			}
+
 			const Glyph Error{ 'X', Colors::BrightRed };
 
 			const Glyph Wall{ Characters::Wall, Colors::Marble };
-			const Glyph Floor{ Characters::Floor, Colors::Charcoal };
-			const Glyph Obstacle{ Characters::Obstacle, Colors::Intrite };
-
-			const Glyph WallBloody{ Characters::Wall, Colors::Materials::Blood };
-			const Glyph FloorBloody{ Characters::Floor, Colors::Materials::Blood };
-			const Glyph ObstacleBloody{ Characters::Obstacle, Colors::Materials::Blood };
+			const Glyph Floor{ Characters::Floor, Colors::LightCharcoal };
+			const Glyph Obstacle{ Characters::Obstacle, Colors::LightIntrite };
 
 			const Glyph Player{ Characters::Entity, Colors::BrightGreen };
 			const Glyph Enemy{ Characters::Entity, Colors::BrightRed };
@@ -162,13 +193,14 @@ namespace rat
 			const Glyph Neutral{ Characters::Entity, Colors::BrightYellow };
 		}
 
-		// These glyphs have been initialized for use with the Battle Graphics glyph set
+		// These glyphs are for use with the Battle Graphics glyph set
 		namespace Battle
 		{
 
 		}
 	}
 
+	// An organizaitonal namespace containing the nine possible constant text alignments
 	namespace Alignments
 	{
 		const TextAlignment Centered{ VerticalAlignment::Center, HorizontalAlignment::Center };

@@ -48,7 +48,13 @@
     <Image Include="assets\glyphs\glyphs_12x12.png">
       <Filter>Assets\Glyphs</Filter>
     </Image>
-    <Image Include="Assets\Glyphs\marching-shamrocks_12x12.png">
+    <Image Include="Assets\Glyphs\tileset_12x12.png">
+      <Filter>Assets\Glyphs</Filter>
+    </Image>
+    <Image Include="Assets\Glyphs\glyphs_16x16.png">
+      <Filter>Assets\Glyphs</Filter>
+    </Image>
+    <Image Include="Assets\Glyphs\tileset_16x16.png">
       <Filter>Assets\Glyphs</Filter>
     </Image>
   </ItemGroup>
@@ -107,11 +113,17 @@
     <ClCompile Include="src\transform.cpp">
       <Filter>Source Files\Structs</Filter>
     </ClCompile>
-    <ClCompile Include="constants.cpp">
-      <Filter>Source Files</Filter>
-    </ClCompile>
     <ClCompile Include="src\cursor.cpp">
       <Filter>Source Files\Objects</Filter>
+    </ClCompile>
+    <ClCompile Include="src\constants.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="src\octant.cpp">
+      <Filter>Source Files\Structs</Filter>
+    </ClCompile>
+    <ClCompile Include="src\math.cpp">
+      <Filter>Source Files</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>
@@ -166,11 +178,20 @@
     <ClInclude Include="include\transform.hpp">
       <Filter>Header Files\Structs</Filter>
     </ClInclude>
+    <ClInclude Include="include\cursor.hpp">
+      <Filter>Header Files\Objects</Filter>
+    </ClInclude>
+    <ClInclude Include="include\octant.hpp">
+      <Filter>Header Files\Structs</Filter>
+    </ClInclude>
     <ClInclude Include="include\constants.hpp">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="include\cursor.hpp">
-      <Filter>Header Files\Objects</Filter>
+    <ClInclude Include="include\math.hpp">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="entity_traits.hpp">
+      <Filter>Header Files</Filter>
     </ClInclude>
   </ItemGroup>
 </Project>

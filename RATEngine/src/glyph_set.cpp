@@ -7,19 +7,19 @@
 
 namespace rat
 {
-	GlyphSet::GlyphSet(SDL_Renderer* renderer) :
-		ptr_Renderer(renderer), ptr_Texture(nullptr)
+	GlyphSet::GlyphSet(SDL_Renderer* renderer, const std::string& path, const Size& glyphSize, const Size& atlasSize) :
+		ptr_Renderer(renderer), ptr_Texture(nullptr), m_GlyphSize(glyphSize), m_AtlasSize(atlasSize)
 	{
 		if (ptr_Renderer)
 		{
-			ptr_Texture = IMG_LoadTexture(ptr_Renderer, glyphSetPath.c_str());
+			ptr_Texture = IMG_LoadTexture(ptr_Renderer, path.c_str());
 
 			if (ptr_Texture)
 			{
-				m_GlyphRects.reserve(sheetSize.Area());
+				m_GlyphRects.reserve(m_AtlasSize.Area());
 
-				for (size_t y = 0; y < SheetSize().Height * glyphSize.Height; y += glyphSize.Height)
-					for (size_t x = 0; x < SheetSize().Width * glyphSize.Width; x += glyphSize.Width)
+				for (size_t y = 0; y < m_AtlasSize.Height * glyphSize.Height; y += glyphSize.Height)
+					for (size_t x = 0; x < m_AtlasSize.Width * glyphSize.Width; x += glyphSize.Width)
 						m_GlyphRects.push_back(new SDL_Rect{ (int)x, (int)y, (int)glyphSize.Width, (int)glyphSize.Height });
 			}
 			else throw(std::exception(SDL_GetError()));
@@ -54,14 +54,14 @@ namespace rat
 	void GlyphSet::DrawGlyph(uint8_t index, const Color& color, const Point& position) const
 	{
 		SetDrawColor(color);
-		SDL_Rect rect{ position.X * glyphSize.Width, position.Y * glyphSize.Height, glyphSize.Width, glyphSize.Height };
+		SDL_Rect rect{ position.X * m_GlyphSize.Width, position.Y * m_GlyphSize.Height, m_GlyphSize.Width, m_GlyphSize.Height };
 		SDL_RenderCopy(ptr_Renderer, ptr_Texture, GetRect(index), &rect);
 	}
 
 	void GlyphSet::DrawGlyph(const Glyph& glyph, const Point& position) const
 	{
 		SetDrawColor(glyph.color);
-		SDL_Rect rect{ position.X * glyphSize.Width, position.Y * glyphSize.Height, glyphSize.Width, glyphSize.Height };
+		SDL_Rect rect{ position.X * m_GlyphSize.Width, position.Y * m_GlyphSize.Height, m_GlyphSize.Width, m_GlyphSize.Height };
 		SDL_RenderCopy(ptr_Renderer, ptr_Texture, GetRect(glyph.index), &rect);
 	}
 

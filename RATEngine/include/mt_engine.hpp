@@ -29,6 +29,10 @@ namespace rat
 			bool NextBool();
 			// Generates a random bool of true or false given a weight
 			bool NextBool(double weight);
+			// Generates a random double between 0.0 and 1.0
+			double NextPercentile();
+			// Generates a random double between min and max
+			double NextDouble(double min, double max);
 			// Generates a random float between min and max
 			float NextFloat(float min, float max);
 
@@ -42,6 +46,8 @@ namespace rat
 
 		extern MTEngine* Generator;
 		extern bool m_Initialized;
+
+		MTEngine* GetGenerator();
 
 		void Initialize();
 		void Initialize(uint64_t seed);
