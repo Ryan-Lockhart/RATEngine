@@ -31,11 +31,8 @@ namespace rat
 		void ToggleFullscreen() { m_Fullscreen = !m_Fullscreen; SDL_SetWindowFullscreen(ptr_Window, m_Fullscreen ? SDL_WINDOW_FULLSCREEN_DESKTOP : 0); }
 
 		virtual void Input(const SDL_Keycode& code);
-		virtual void Update();
-
-		void CalculateFOV(int viewDistance, float span);
-
-		virtual void Render();
+		virtual void Update(std::chrono::high_resolution_clock::duration deltaTime);
+		virtual void Render(std::chrono::high_resolution_clock::duration deltaTime);
 
 		void SetDrawColor(const Color& color);
 
@@ -49,8 +46,13 @@ namespace rat
 
 		void DrawCursor(const Cursor& cursor, bool attached = false);
 
+		/// <summary>
+		/// BRING OUT YER DEAD!
+		/// </summary>
+		void CollectDead();
+
 	private:
-		unsigned short m_FPS;
+		unsigned long m_FPS;
 
 		bool m_Fullscreen;
 		bool m_Locked;
@@ -75,8 +77,9 @@ namespace rat
 		Action m_CurrentAction;
 		Coord m_ActionPosition;
 
-		std::vector<Actor*>* ptr_vec_Enemies;
+		std::vector<Actor*>* ptr_vec_Living;
+		std::vector<Actor*>* ptr_vec_Dead;
 
-		unsigned int lastUpdateTime;
+		std::chrono::high_resolution_clock::time_point lastUpdateTime;
 	};
 }

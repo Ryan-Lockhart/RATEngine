@@ -44,6 +44,30 @@ namespace rat
 	
 	Coord& Coord::operator /=(coord_t scalar) { X /= scalar; Y /= scalar; Z /= scalar; return *this; }
 
+	Coord& Coord::operator++()
+	{
+		X++; Y++; Z++;
+		return *this;
+	}
+
+	Coord Coord::operator++(int)
+	{
+		X++; Y++; Z++;
+		return *this;
+	}
+
+	Coord& Coord::operator--()
+	{
+		X--; Y--; Z--;
+		return *this;
+	}
+
+	Coord Coord::operator--(int)
+	{
+		X--; Y--; Z--;
+		return *this;
+	}
+
 	#pragma endregion
 
 	#pragma region Equality Operators

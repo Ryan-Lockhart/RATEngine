@@ -28,7 +28,7 @@ namespace rat
 	extern std::list<std::string> messageLog;
 	constexpr int maxMessages = 21;
 
-	constexpr unsigned int minimumUpdateTime = 10000;
+	constexpr unsigned long long minimumUpdateTime = 1000;
 
 	extern const char* windowTitle;
 

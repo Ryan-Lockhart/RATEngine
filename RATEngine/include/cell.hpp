@@ -65,6 +65,9 @@ namespace rat
 		std::vector<Actor*>& GetCorpses() { return vec_Corpses; }
 		const std::vector<Actor*>& GetCorpses() const { return vec_Corpses; }
 
+		void GenerateNeighbourhood();
+		std::vector<Cell*>& GetNeighbours() { return vec_Neighbours; }
+
 		void Empty();
 
 		void Draw(const GlyphSet& glyphSet, const Point& screenPosition, bool drawOccupant = true) const;
@@ -77,6 +80,7 @@ namespace rat
 		Actor* ptr_Occupant;
 
 		std::vector<Actor*> vec_Corpses;
+		std::vector<Cell*> vec_Neighbours;
 
 		uint8_t m_Index;
 		bool m_Dirty;

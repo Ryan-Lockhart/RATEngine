@@ -35,6 +35,11 @@ namespace rat
 		Coord& operator *=(coord_t scalar);
 		Coord& operator /=(coord_t scalar);
 
+		Coord& operator ++();
+		Coord operator ++(int);
+		Coord& operator --();
+		Coord operator --(int);
+
 		friend bool operator ==(const Coord& lhs, const Coord& rhs);
 		friend bool operator !=(const Coord& lhs, const Coord& rhs);
 

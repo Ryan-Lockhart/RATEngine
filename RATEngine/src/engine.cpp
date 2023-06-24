@@ -12,13 +12,15 @@ namespace rat
 {
 	std::list<std::string> messageLog{};
 
-	constexpr size_t minimumEnemies = 10;
-	constexpr size_t maximumEnemies = 20;
+	const Bounds mapSize = { 256, 256, 1 };
+
+	const size_t minimumEnemies = 500;
+	const size_t maximumEnemies = 1000;
 
 	Engine::Engine(uint64_t seed) :
 		ptr_Window(nullptr), ptr_Renderer(nullptr), ptr_GameSet(nullptr), ptr_UISet(nullptr),
-		ptr_Map(nullptr), ptr_Cursor(nullptr), ptr_Player(nullptr), ptr_vec_Enemies(nullptr),
-		lastUpdateTime(1), m_FPS(0), m_Fullscreen(false), m_PlayerActed(false), m_Locked(true), m_ShowControls(false)
+		ptr_Map(nullptr), ptr_Cursor(nullptr), ptr_Player(nullptr), ptr_vec_Living(nullptr), ptr_vec_Dead(nullptr),
+		m_Fullscreen(false), m_PlayerActed(false), m_Locked(true), m_ShowControls(false)
 	{
 		if (SDL_Init(SDL_INIT_VIDEO) < 0)
 			throw(std::exception(SDL_GetError()));
@@ -53,22 +55,22 @@ namespace rat
 		if (ptr_UISet == nullptr)
 			throw("Game graphics failed to initialize!");
 		
-		Random::Initialize(1337);
+		Random::Initialize(seed);
 		if (!Random::Initialized())
 			throw("Generator failed to initialize!");
 
 		bool exit = false;
 
-		unsigned int lastFrame = SDL_GetTicks();
-		unsigned int thisFrame = SDL_GetTicks();
+		std::chrono::high_resolution_clock::time_point lastFrame;
+		std::chrono::high_resolution_clock::time_point thisFrame;
 
-		double delta = 0;
+		std::chrono::high_resolution_clock::duration deltaTime;
 
-		ptr_Map = new Map({ 256, 256, 1 }, { 16, 16, 1 });
+		ptr_Map = new Map(mapSize, { 16, 16, 1 });
 
 		ptr_Cursor = new Cursor(*ptr_Map, { 0, 0 }, { 1, 1 });
 
-		ptr_Map->Generate(0.425f);
+		ptr_Map->Generate(0.4f);
 		ptr_Map->Smooth(5, 4);
 
 		ptr_Map->Populate();
@@ -77,7 +79,9 @@ namespace rat
 
 		size_t totalEnemies = (size_t)Random::Generator->Next(minimumEnemies, maximumEnemies);
 
-		ptr_vec_Enemies = new std::vector<Actor*>(totalEnemies, nullptr);
+		ptr_vec_Living = new std::vector<Actor*>(totalEnemies, nullptr);
+		ptr_vec_Dead = new std::vector<Actor*>(0, nullptr);
+
 		size_t maxEnemyTypes = 6;
 
 		for (int i = 0; i < totalEnemies; i++)
@@ -87,109 +91,106 @@ namespace rat
 			switch (next)
 			{
 			case 0:
-				(*ptr_vec_Enemies)[i] = new Actor("Gremlin", "A dimunitive creature with a cunning disposition", Glyph{Characters::Entity, Colors::BrightYellow}, 1.5f, 0.65f, 0.0f, 0.266f, 0.475f, true, ptr_Map);
+				(*ptr_vec_Living)[i] = new Actor("Gremlin", "A dimunitive creature with a cunning disposition", Glyph{Characters::Entity, Colors::BrightYellow}, 1.5f, 0.65f, 0.0f, 0.266f, 0.475f, true, ptr_Map);
 				break;
 			case 1:
-				(*ptr_vec_Enemies)[i] = new Actor("Goblin", "A dexterous and selfish humanoid", Glyph{ Characters::Entity, Colors::LightGreen }, 3.5f, 1.25f, 0.5f, 0.375f, 0.675f, true, ptr_Map);
+				(*ptr_vec_Living)[i] = new Actor("Goblin", "A dexterous and selfish humanoid", Glyph{ Characters::Entity, Colors::LightGreen }, 3.5f, 1.25f, 0.5f, 0.375f, 0.675f, true, ptr_Map);
 				break;
 			case 2:
-				(*ptr_vec_Enemies)[i] = new Actor("Ork", "A brutal and violent humanoid", Glyph{Characters::Entity, Colors::BrightOrange}, 12.5f, 3.5f, 1.25f, 0.666f, 0.275f, true, ptr_Map);
+				(*ptr_vec_Living)[i] = new Actor("Ork", "A brutal and violent humanoid", Glyph{Characters::Entity, Colors::BrightOrange}, 12.5f, 3.5f, 1.25f, 0.666f, 0.275f, true, ptr_Map);
 				break;
 			case 3:
-				(*ptr_vec_Enemies)[i] = new Actor("Troll", "A giant humaniod of great strength", Glyph{Characters::Entity, Colors::BrightRed}, 25.0f, 12.5f, 2.5f, 0.125f, 0.114f, true, ptr_Map);
+				(*ptr_vec_Living)[i] = new Actor("Troll", "A giant humaniod of great strength", Glyph{Characters::Entity, Colors::BrightRed}, 25.0f, 12.5f, 2.5f, 0.125f, 0.114f, true, ptr_Map);
 				break;
 			case 4:
-				(*ptr_vec_Enemies)[i] = new Actor("Draugr", "An undead servant of a wraith", Glyph{Characters::Entity, Colors::DarkMarble}, 7.5f, 2.5f, 5.0f, 0.675f, 0.221f, true, ptr_Map);
+				(*ptr_vec_Living)[i] = new Actor("Draugr", "An undead servant of a wraith", Glyph{Characters::Entity, Colors::DarkMarble}, 7.5f, 2.5f, 5.0f, 0.675f, 0.221f, true, ptr_Map);
 				break;
 			case 5:
-				(*ptr_vec_Enemies)[i] = new Actor("Basilisk", "A large hexapedal reptile of terrible power", Glyph{Characters::Entity, Colors::Intrite}, 17.5f, 7.5f, 3.75f, 0.425f, 0.321f, true, ptr_Map);
+				(*ptr_vec_Living)[i] = new Actor("Basilisk", "A large hexapedal reptile of terrible power", Glyph{Characters::Entity, Colors::Intrite}, 17.5f, 7.5f, 3.75f, 0.425f, 0.321f, true, ptr_Map);
 				break;
 			case 6:
-				(*ptr_vec_Enemies)[i] = new Actor("Serpentman", "A slithering humanoid with superior agility", Glyph{ Characters::Entity, Colors::BrightBlue }, 17.5f, 7.5f, 3.75f, 0.425f, 0.321f, true, ptr_Map);
+				(*ptr_vec_Living)[i] = new Actor("Serpentman", "A slithering humanoid with superior agility", Glyph{ Characters::Entity, Colors::BrightBlue }, 17.5f, 7.5f, 3.75f, 0.425f, 0.321f, true, ptr_Map);
 				break;
 			case 7:
-				(*ptr_vec_Enemies)[i] = new Actor("Wraith", "An eldritch abomination! Woe upon thee...", Glyph{ Characters::Entity, Colors::BrightMagenta }, 125.0f, 75.0f, 30.0f, 0.75f, 0.975f, true, ptr_Map);
+				(*ptr_vec_Living)[i] = new Actor("Wraith", "An eldritch abomination! Woe upon thee...", Glyph{ Characters::Entity, Colors::BrightMagenta }, 125.0f, 75.0f, 30.0f, 0.75f, 0.975f, true, ptr_Map);
 				break;
 			}
 		}
 
 		while (!exit)
 		{
-			lastFrame = SDL_GetTicks();
-			delta = lastFrame - thisFrame;
+			lastFrame = thisFrame;
+			thisFrame = std::chrono::high_resolution_clock::now();
+			deltaTime = thisFrame - lastFrame;
 
-			if (delta > 1000 / 60.0)
+			//m_FPS = std::chrono::duration_cast<std::chrono::seconds>(deltaTime).count();
+			m_FPS = deltaTime.count() / 100000;
+
+			SDL_Event e;
+
+			while (SDL_PollEvent(&e) > 0)
 			{
-				m_FPS = 1000 / (unsigned short)delta;
-
-				thisFrame = lastFrame;
-
-				SDL_Event e;
-
-				while (SDL_PollEvent(&e) > 0)
+				if (e.type == SDL_KEYDOWN && m_ActionSelect)
 				{
-					if (e.type == SDL_KEYDOWN && m_ActionSelect)
+					switch (e.key.keysym.sym)
 					{
-						switch (e.key.keysym.sym)
-						{
-						case SDLK_1:
-							m_CurrentAction = Action::MoveTo;
-							m_ActionSelect = false;
-							break;
-						case SDLK_2:
-							m_CurrentAction = Action::LookAt;
-							m_ActionSelect = false;
-							break;
-						case SDLK_3:
-							m_CurrentAction = Action::Attack;
-							m_ActionSelect = false;
-							break;
-						case SDLK_4:
-							m_CurrentAction = Action::Push;
-							m_ActionSelect = false;
-							break;
-						case SDLK_5:
-							m_CurrentAction = Action::Mine;
-							m_ActionSelect = false;
-							break;
-						}
-					}
-
-					switch (e.type)
-					{
-					case SDL_KEYDOWN:
-						switch (e.key.keysym.sym)
-						{
-						case SDLK_ESCAPE:
-							if (!m_ActionSelect)
-								exit = true;
-							else
-							{
-								m_CurrentAction = Action::None;
-								m_ActionSelect = false;
-							}
-							break;
-						case SDLK_BACKSPACE:
-							messageLog.clear();
-							break;
-						case SDLK_TAB:
-							if (!m_ActionSelect)
-							{
-								m_ActionSelect = true;
-								m_CurrentAction = Action::None;
-							}
-							else m_ActionSelect = false;
-							break;
-						default:
-							Input(e.key.keysym.sym);
-							break;
-						}
+					case SDLK_1:
+						m_CurrentAction = Action::MoveTo;
+						m_ActionSelect = false;
+						break;
+					case SDLK_2:
+						m_CurrentAction = Action::LookAt;
+						m_ActionSelect = false;
+						break;
+					case SDLK_3:
+						m_CurrentAction = Action::Attack;
+						m_ActionSelect = false;
+						break;
+					case SDLK_4:
+						m_CurrentAction = Action::Push;
+						m_ActionSelect = false;
+						break;
+					case SDLK_5:
+						m_CurrentAction = Action::Mine;
+						m_ActionSelect = false;
+						break;
 					}
 				}
 
-				Update();
-				Render();
+				switch (e.type)
+				{
+				case SDL_KEYDOWN:
+					switch (e.key.keysym.sym)
+					{
+					case SDLK_ESCAPE:
+						if (!m_ActionSelect)
+							exit = true;
+						else
+						{
+							m_CurrentAction = Action::None;
+							m_ActionSelect = false;
+						}
+						break;
+					case SDLK_BACKSPACE:
+						messageLog.clear();
+						break;
+					case SDLK_TAB:
+						if (!m_ActionSelect)
+						{
+							m_ActionSelect = true;
+							m_CurrentAction = Action::None;
+						}
+						else m_ActionSelect = false;
+						break;
+					default:
+						Input(e.key.keysym.sym);
+						break;
+					}
+				}
 			}
+
+			Update(deltaTime);
+			Render(deltaTime);
 		}
 	}
 
@@ -200,9 +201,13 @@ namespace rat
 		delete ptr_Cursor;
 		delete ptr_Player;
 		
-		for (int i = 0; i < ptr_vec_Enemies->size(); i++)
-			delete ptr_vec_Enemies->at(i);
-		delete ptr_vec_Enemies;
+		for (int i = 0; i < ptr_vec_Living->size(); i++)
+			delete ptr_vec_Living->at(i);
+		delete ptr_vec_Living;
+
+		for (int i = 0; i < ptr_vec_Dead->size(); i++)
+			delete ptr_vec_Dead->at(i);
+		delete ptr_vec_Dead;
 
 		delete ptr_Map;
 
@@ -225,17 +230,20 @@ namespace rat
 				if (ptr_Player != nullptr && !m_PlayerActed && ptr_Player->IsAlive())
 				{
 				case SDLK_z:
-					if (ptr_Player != nullptr) ptr_Player->SetStance(Stance::Prone);
+					ptr_Player->SetStance(Stance::Prone);
 					m_PlayerActed = true;
 					break;
 				case SDLK_x:
-					if (ptr_Player != nullptr) ptr_Player->SetStance(Stance::Erect);
+					ptr_Player->SetStance(Stance::Erect);
 					m_PlayerActed = true;
 					break;
 				case SDLK_c:
-					if (ptr_Player != nullptr) ptr_Player->SetStance(Stance::Crouch);
+					ptr_Player->SetStance(Stance::Crouch);
 					m_PlayerActed = true;
 					break;
+				case SDLK_l:
+					ptr_Player->Act(ptr_Cursor->GetCell()->GetPosition(), Action::LookAt, false);
+					m_PlayerActed = true;
 				}
 
 			case SDLK_SPACE:
@@ -300,10 +308,7 @@ namespace rat
 							ptr_Player->Act({ x_input, y_input, 0 }, m_CurrentAction, true);
 							m_CurrentAction = Action::None;
 						}
-						else
-						{
-							ptr_Player->Act({ x_input, y_input, 0 }, m_CurrentAction, true);
-						}
+						else ptr_Player->Act({ x_input, y_input, 0 }, true);
 
 						m_PlayerActed = true;
 						
@@ -314,38 +319,52 @@ namespace rat
 		}		
 	}
 
-	void Engine::Update()
+	void Engine::Update(std::chrono::high_resolution_clock::duration deltaTime)
 	{
-		if (ptr_Player != nullptr && ptr_Player->IsAlive())
-		{
-			if (m_Locked && ptr_Map != nullptr && ptr_Player != nullptr)
-				ptr_Map->CenterOn(ptr_Player->GetPosition());
+		if (ptr_Map == nullptr) return;
 
-			if (ptr_Map != nullptr && ptr_Player != nullptr)
+		if (ptr_Player != nullptr)
+		{
+			if (ptr_Player->IsAlive())
 			{
-				switch (ptr_Player->GetStance())
+				if (m_Locked && ptr_Map != nullptr && ptr_Player != nullptr)
+					ptr_Map->CenterOn(ptr_Player->GetPosition());
+
+				if (ptr_Map != nullptr)
 				{
-				case Stance::Erect:
-					ptr_Map->CalculateFOV(ptr_Player->GetPosition(), 32.0, ptr_Player->GetRotation(), 135.0);
-					break;
-				case Stance::Crouch:
-					ptr_Map->CalculateFOV(ptr_Player->GetPosition(), 16.0, ptr_Player->GetRotation(), 180.0);
-					break;
-				case Stance::Prone:
-					ptr_Map->CalculateFOV(ptr_Player->GetPosition(), 48.0, ptr_Player->GetRotation(), 33.75);
-					break;
+					double view_distance;
+					double view_span;
+
+					switch (ptr_Player->GetStance())
+					{
+					case Stance::Erect:
+						view_distance = 32.0;
+						view_span = 135.0;
+						break;
+					case Stance::Crouch:
+						view_distance = 16.0;
+						view_span = 180.0;
+						break;
+					case Stance::Prone:
+						view_distance = 48.0;
+						view_span = 33.75;
+						break;
+					}
+
+					ptr_Map->CalculateFOV(ptr_Player->GetPosition(), view_distance, ptr_Player->GetRotation(), view_span);
 				}
 			}
-		}
-		else if (ptr_Player != nullptr && ptr_Player->IsDead())
-		{
-			if (lastUpdateTime - SDL_GetTicks() > minimumUpdateTime)
+			else if (ptr_Player->IsDead())
 			{
-				lastUpdateTime = SDL_GetTicks();
+				auto now = std::chrono::high_resolution_clock().now();
 
-				m_PlayerActed = true;
+				if (std::chrono::duration_cast<std::chrono::milliseconds>(now - lastUpdateTime).count() > minimumUpdateTime)
+				{
+					m_PlayerActed = true;
+					lastUpdateTime = now;
 
-				ptr_Map->RevealMap();
+					ptr_Map->RevealMap();
+				}
 			}
 		}
 
@@ -367,7 +386,9 @@ namespace rat
 
 		if (m_PlayerActed)
 		{
-			for (auto& enemy : *ptr_vec_Enemies)
+			CollectDead();
+
+			for (auto& enemy : *ptr_vec_Living)
 				if (enemy != nullptr)
 					enemy->Update();
 
@@ -381,7 +402,7 @@ namespace rat
 			ptr_Cursor->Update(displayRect.position, ptr_GameSet->GetGlyphSize());
 	}
 
-	void Engine::Render()
+	void Engine::Render(std::chrono::high_resolution_clock::duration deltaTime)
 	{
 		SDL_RenderSetViewport(ptr_Renderer, NULL);
 
@@ -769,6 +790,7 @@ namespace rat
 				{
 					text += "\n\nCorpses:";
 
+					// No corpse limit
 					/*for (auto i = corpses.begin(); i != corpses.end(); i++)
 					{
 						text += "\n" + (*i)->GetName();
@@ -789,6 +811,7 @@ namespace rat
 			{
 				text = std::format("{}, {}", (std::string)cursorRect.position, cell != nullptr ? std::to_string(cell->GetState()) : "???");
 			}
+			else text = (std::string)cursorRect.position + ", ???";
 		}
 		else
 		{
@@ -796,5 +819,40 @@ namespace rat
 		}
 
 		DrawLabel(text, (attached ? (drawRect.position + (attached ? offset : Point{ 0, 0 })) : Point{ displayRect.position.X + 128UL/*Need to add UI<->Game grid conversion function*/, footerBar.position.Y}), {1, 1}, attached ? cursor.GetAlignment() : Alignments::LowerRight, Colors::White);
+	}
+
+	void Engine::CollectDead()
+	{
+		std::vector<Actor*>* living = new std::vector<Actor*>();
+		std::vector<Actor*>* dead = new std::vector<Actor*>();
+
+		for (int i = 0; i < ptr_vec_Living->size(); i++)
+		{
+			Actor* at = ptr_vec_Living->at(i);
+
+			if (at == nullptr) continue;
+
+			if (at->IsAlive()) living->push_back(at);
+			else if (at->IsDead()) dead->push_back(at);
+		}
+
+		// Check for resurrection!
+		for (int i = 0; i < ptr_vec_Dead->size(); i++)
+		{
+			Actor* at = ptr_vec_Dead->at(i);
+
+			if (at == nullptr) continue;
+
+			if (at->IsAlive()) living->push_back(at);
+			else if (at->IsDead()) dead->push_back(at);
+		}
+
+		std::swap(living, ptr_vec_Living);
+		std::swap(dead, ptr_vec_Dead);
+
+		delete living;
+		living = nullptr;
+		delete dead;
+		dead = nullptr;
 	}
 }

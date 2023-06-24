@@ -11,7 +11,8 @@
 namespace rat
 {
 	Actor::Actor(const std::string& name, const std::string& description, const Glyph& glyph, float health, float damage, float armor, float accuracy, float dodge, bool randomize, Cell* startingCell) :
-		ptr_Residency(nullptr), ptr_Parent(nullptr), m_Glyph(glyph), m_Name(name), m_Description(description), m_Angle(0.0), m_Stance(Stance::Erect),
+		ptr_Residency(nullptr), ptr_Parent(nullptr), ptr_Target(nullptr), m_Glyph(glyph),
+		m_Name(name), m_Description(description), m_Angle(0.0), m_Stance(Stance::Erect), m_Dead(false), m_Bleeding(false),
 		m_MaxHealth(randomize ? Random::GetGenerator()->NextFloat(0.9f, 1.1f) * health : health), m_CurrentHealth(m_MaxHealth),
 		m_Damage(randomize ? Random::GetGenerator()->NextFloat(0.9f, 1.1f) * damage : damage),
 		m_Armor(randomize ? Random::GetGenerator()->NextFloat(0.9f, 1.1f) * armor : damage),
@@ -29,7 +30,8 @@ namespace rat
 	}
 
 	Actor::Actor(const std::string& name, const std::string& description, const Glyph& glyph, float health, float damage, float armor, float accuracy, float dodge, bool randomize, Map* map) :
-		ptr_Residency(nullptr), ptr_Parent(nullptr), m_Glyph(glyph), m_Name(name), m_Description(description), m_Angle(0.0), m_Stance(Stance::Erect),
+		ptr_Residency(nullptr), ptr_Parent(nullptr), ptr_Target(nullptr), m_Glyph(glyph),
+		m_Name(name), m_Description(description), m_Angle(0.0), m_Stance(Stance::Erect), m_Dead(false), m_Bleeding(false),
 		m_MaxHealth(randomize ? Random::GetGenerator()->NextFloat(0.9f, 1.1f) * health : health), m_CurrentHealth(m_MaxHealth),
 		m_Damage(randomize ? Random::GetGenerator()->NextFloat(0.9f, 1.1f) * damage : damage),
 		m_Armor(randomize ? Random::GetGenerator()->NextFloat(0.9f, 1.1f) * armor : damage),
@@ -50,8 +52,8 @@ namespace rat
 
 	void Actor::Update()
 	{
-		if (m_CurrentHealth > 0)
-			m_Dead = false;
+		if (m_Dead) return;
+		else m_Dead = m_CurrentHealth <= 0;
 
 		if (IsAlive())
 		{
@@ -64,31 +66,28 @@ namespace rat
 			{
 				Cell* cell = ptr_Parent->GetCell(position);
 
-				if (cell != nullptr)
+				if (cell == nullptr) continue;
+
+				Actor* actor = cell->GetOccupant();
+
+				if (actor == nullptr) continue;
+
+				if (actor == this || !actor->IsAlive()) continue;
+
+				Coord delta(actor->GetPosition() - m_Position);
+				double distance(math::normalize((double)delta.X, (double)delta.Y));
+
+				if (closestActor == nullptr)
 				{
-					Actor* actor = cell->GetOccupant();
-
-					if (actor != nullptr)
+					closestActor = actor;
+					closestDistance = distance;
+				}
+				else
+				{
+					if (closestDistance > distance)
 					{
-						if (actor != this && actor->IsAlive())
-						{
-							Coord delta(actor->GetPosition() - m_Position);
-							double distance(math::normalize((double)delta.X, (double)delta.Y));
-
-							if (closestActor == nullptr)
-							{
-								closestActor = actor;
-								closestDistance = distance;
-							}
-							else
-							{
-								if (closestDistance > distance)
-								{
-									closestActor = actor;
-									closestDistance = distance;
-								}
-							}
-						}
+						closestActor = actor;
+						closestDistance = distance;
 					}
 				}
 			}
@@ -97,124 +96,131 @@ namespace rat
 
 			if (ptr_Target != nullptr)
 			{
-				if (ptr_Target->IsAlive())
-				{
-					auto path = ptr_Parent->CalculatePath(m_Position, ptr_Target->GetPosition());
+				if (m_Path.empty())
+					m_Path = ptr_Parent->CalculatePath(m_Position, ptr_Target->GetPosition());
 
-					Act(path.at(1) - m_Position);
+				if (!m_Path.empty())
+				{
+					Act(m_Path.top(), false);
+					m_Path.pop();
 				}
-				else ptr_Target = nullptr;
 			}
 			else
 			{
-				Coord wanderTarget{ 0, 0, 0 };
+				if (m_Path.empty())
+				{
+					Coord wanderTarget{ 0, 0, 0 };
 
-				while (wanderTarget.X == 0 && wanderTarget.Y == 0)
-					wanderTarget = { Random::GetGenerator()->Next(-1, 2), Random::GetGenerator()->Next(-1, 2), 0 };
+					bool is_valid = false;
 
-				Act(m_Position + wanderTarget);
+					while (!is_valid)
+					{
+						wanderTarget = Coord{ Random::GetGenerator()->Next(-10, 11), Random::GetGenerator()->Next(-10, 11), 0 } + m_Position;
+						is_valid = !ptr_Parent->GetCell(wanderTarget)->IsSolid();
+					}
+
+					m_Path = ptr_Parent->CalculatePath(m_Position, wanderTarget);
+				}
+				else
+				{
+					Act(m_Path.top(), false);
+					m_Path.pop();
+				}
 			}
 		}
 	}
 
 	void Actor::Act(const Coord& position, bool offset)
 	{
-		if (!m_Dead)
+		if (m_Dead) return;
+
+		if (m_Bleeding)
 		{
-			if (m_Bleeding)
+			m_CurrentHealth -= 0.25f;
+			ptr_Residency->SetBlood(true);
+
+			if (m_CurrentHealth <= 0)
 			{
-				m_CurrentHealth -= 0.25f;
-				ptr_Residency->SetBlood(true);
+				m_Dead = true;
+				ptr_Residency->AddCorpse(this);
 
-				if (m_CurrentHealth <= 0)
-				{
-					m_Dead = true;
-					ptr_Residency->AddCorpse(this);
+				if (this->GetName() == "Jenkins" || (ptr_Target != nullptr && ptr_Target->GetName() == "Jenkins"))
+					messageLog.push_back((this->GetName() == "Jenkins" ? "\n" : "\nThe ") + m_Name + " bled out!\nIt writhes in a pool of its own blood...\n");
 
-					if (this->GetName() == "Jenkins" || (ptr_Target != nullptr && ptr_Target->GetName() == "Jenkins"))
-						messageLog.push_back((this->GetName() == "Jenkins" ? "\n" : "\nThe ") + m_Name + " bled out!\nIt writhes in a pool of its own blood...\n");
-
-					return;
-				}
+				return;
 			}
+		}
 
-			Coord actPosition = offset ? Coord{ m_Position + position } : position;
+		Coord actPosition = offset ? Coord{ m_Position + position } : position;
 
-			Coord delta{ actPosition - m_Position };
+		Coord delta{ actPosition - m_Position };
 
-			m_Angle = math::rad_to_deg * std::atan2(delta.Y, delta.X);
+		m_Angle = math::rad_to_deg * std::atan2(delta.Y, delta.X);
 
-			if (ptr_Parent != nullptr)
-			{
-				if (ptr_Parent->WithinBounds(actPosition))
-				{
-					Cell* currentCell = ptr_Parent->GetCell(actPosition);
+		if (ptr_Parent == nullptr) throw(std::exception("Orphaned actors cannot act!"));
 
-					if (!currentCell->IsSolid() && currentCell->IsVacant())
-						Move(currentCell);
-					else if (!currentCell->IsVacant() && m_Stance == Stance::Erect)
-						Attack(currentCell->GetOccupant());
-					else if (currentCell->IsSolid() && m_Stance == Stance::Erect)
-						Mine(currentCell);
-				}
-			}
-			else throw(std::exception("Orphaned actors cannot act!"));
+		if (ptr_Parent->WithinBounds(actPosition))
+		{
+			Cell* currentCell = ptr_Parent->GetCell(actPosition);
+
+			if (!currentCell->IsSolid() && currentCell->IsVacant())
+				Move(currentCell);
+			else if (!currentCell->IsVacant() && m_Stance == Stance::Erect)
+				Attack(currentCell->GetOccupant());
+			else if (currentCell->IsSolid() && m_Stance == Stance::Erect)
+				Mine(currentCell);
 		}
 	}
 
 	void Actor::Act(const Coord& position, const Action& action, bool offset)
 	{
-		if (!m_Dead)
+		if (m_Dead) return;
+
+		if (m_Bleeding)
 		{
-			if (m_Bleeding)
+			m_CurrentHealth -= 0.25f;
+			ptr_Residency->SetBlood(true);
+
+			if (m_CurrentHealth <= 0)
 			{
-				m_CurrentHealth -= 0.25f;
-				ptr_Residency->SetBlood(true);
+				m_Dead = true;
+				ptr_Residency->AddCorpse(this);
 
-				if (m_CurrentHealth <= 0)
-				{
-					m_Dead = true;
-					ptr_Residency->AddCorpse(this);
+				if (this->GetName() == "Jenkins" || (ptr_Target != nullptr && ptr_Target->GetName() == "Jenkins"))
+					messageLog.push_back((this->GetName() == "Jenkins" ? "\n" : "\nThe ") + m_Name + " bled out!\nIt writhes in a pool of its own blood...\n");
 
-					if (this->GetName() == "Jenkins" || (ptr_Target != nullptr && ptr_Target->GetName() == "Jenkins"))
-						messageLog.push_back((this->GetName() == "Jenkins" ? "\n" : "\nThe ") + m_Name + " bled out!\nIt writhes in a pool of its own blood...\n");
-
-					return;
-				}
+				return;
 			}
-
-			Coord actPosition;
-
-			actPosition = offset ? Coord{ m_Position + position } : position;
-
-			Coord delta{ actPosition - m_Position };
-
-			m_Angle = math::rad_to_deg * std::atan2(delta.Y, delta.X);
-
-			if (ptr_Parent != nullptr)
-			{
-				if (ptr_Parent->WithinBounds(actPosition) && action != Action::LookAt)
-				{
-					Cell* currentCell = ptr_Parent->GetCell(actPosition);
-
-					switch (action)
-					{
-					case Action::Attack:
-						Attack(currentCell->GetPosition());
-						break;
-					case Action::Push:
-						Push(currentCell->GetPosition());
-						break;
-					case Action::Mine:
-						Mine(currentCell->GetPosition());
-						break;
-					}
-				}
-				else if (action != Action::LookAt)
-					LookAt(actPosition);
-			}
-			else throw(std::exception("Orphaned actors cannot act!"));
 		}
+
+		Coord actPosition;
+
+		actPosition = offset ? Coord{ m_Position + position } : position;
+
+		Coord delta{ actPosition - m_Position };
+
+		m_Angle = math::rad_to_deg * std::atan2(delta.Y, delta.X);
+
+		if (ptr_Parent == nullptr) throw(std::exception("Orphaned actors cannot act!"));
+
+		if (ptr_Parent->WithinBounds(actPosition) && action != Action::LookAt)
+		{
+			Cell* currentCell = ptr_Parent->GetCell(actPosition);
+
+			switch (action)
+			{
+			case Action::Attack:
+				Attack(currentCell->GetPosition());
+				break;
+			case Action::Push:
+				Push(currentCell->GetPosition());
+				break;
+			case Action::Mine:
+				Mine(currentCell->GetPosition());
+				break;
+			}
+		}
+		else if (action != Action::LookAt) LookAt(actPosition);
 	}
 
 	void Actor::Move(const Coord& where)
@@ -234,7 +240,7 @@ namespace rat
 
 	void Actor::Move(Cell* to)
 	{
-		if (to != ptr_Residency && WithinReach(to->GetPosition()))
+		if (to != ptr_Residency && WithinReach(to->GetPosition() - GetPosition()))
 		{
 			ptr_Residency->Vacate();
 			ptr_Residency = to;
@@ -272,33 +278,34 @@ namespace rat
 
 	void Actor::Attack(Actor* what)
 	{
-		if (what != nullptr)
+		if (what == nullptr) return;
+
+		float randomizedAccuracy(math::clamp(m_Accuracy * Random::Generator->NextFloat(0.5f, 1.5f), 0.0f, 3.0f));
+		float randomizedDamage(math::clamp(m_Damage * Random::Generator->NextFloat(0.75f, 1.25f), 0.0f, INFINITY));
+
+		if (this->GetName() == "Jenkins" || what->GetName() == "Jenkins")
 		{
-			float randomizedAccuracy(math::clamp(m_Accuracy * Random::Generator->NextFloat(0.5f, 1.5f), 0.0f, 3.0f));
-			float randomizedDamage(math::clamp(m_Damage * Random::Generator->NextFloat(0.75f, 1.25f), 0.0f, INFINITY));
-
-			if (this->GetName() == "Jenkins" || what->GetName() == "Jenkins")
-			{
-				if (randomizedAccuracy <= 0.0)
-					messageLog.push_back(std::string((this->GetName() == "Jenkins" ? "\n" : "\nThe ") + m_Name + " misses!"));
-				else if (randomizedAccuracy > 0.0f && randomizedAccuracy <= 0.5f)
-					messageLog.push_back(std::string((this->GetName() == "Jenkins" ? "\n" : "\nThe ") + m_Name + " swings with reckless abandon!"));
-				else if (randomizedAccuracy > 0.5f && randomizedAccuracy <= 1.0f)
-					messageLog.push_back(std::string((this->GetName() == "Jenkins" ? "\n" : "\nThe ") + m_Name + " swings wildly!"));
-				else if (randomizedAccuracy > 1.0f && randomizedAccuracy <= 1.75f)
-					messageLog.push_back(std::string((this->GetName() == "Jenkins" ? "\n" : "\nThe ") + m_Name + " swings with skill!"));
-				else if (randomizedAccuracy > 1.75f && randomizedAccuracy <= 2.5f)
-					messageLog.push_back(std::string((this->GetName() == "Jenkins" ? "\n" : "\nThe ") + m_Name + " executes an exquisite swing!"));
-				else if (randomizedAccuracy > 2.5f)
-					messageLog.push_back(std::string((this->GetName() == "Jenkins" ? "\n" : "\nThe ") + m_Name + " unleashes a masterful swing!"));
-			}
-
-			what->Defend(this, { what->GetPosition() - m_Position }, randomizedAccuracy, randomizedDamage);
+			if (randomizedAccuracy <= 0.0)
+				messageLog.push_back(std::string((this->GetName() == "Jenkins" ? "\n" : "\nThe ") + m_Name + " misses!"));
+			else if (randomizedAccuracy > 0.0f && randomizedAccuracy <= 0.5f)
+				messageLog.push_back(std::string((this->GetName() == "Jenkins" ? "\n" : "\nThe ") + m_Name + " swings with reckless abandon!"));
+			else if (randomizedAccuracy > 0.5f && randomizedAccuracy <= 1.0f)
+				messageLog.push_back(std::string((this->GetName() == "Jenkins" ? "\n" : "\nThe ") + m_Name + " swings wildly!"));
+			else if (randomizedAccuracy > 1.0f && randomizedAccuracy <= 1.75f)
+				messageLog.push_back(std::string((this->GetName() == "Jenkins" ? "\n" : "\nThe ") + m_Name + " swings with skill!"));
+			else if (randomizedAccuracy > 1.75f && randomizedAccuracy <= 2.5f)
+				messageLog.push_back(std::string((this->GetName() == "Jenkins" ? "\n" : "\nThe ") + m_Name + " executes an exquisite swing!"));
+			else if (randomizedAccuracy > 2.5f)
+				messageLog.push_back(std::string((this->GetName() == "Jenkins" ? "\n" : "\nThe ") + m_Name + " unleashes a masterful swing!"));
 		}
+
+		what->Defend(this, { what->GetPosition() - m_Position }, randomizedAccuracy, randomizedDamage);
 	}
 
 	void Actor::Defend(Actor* attacker, const Coord& direction, float accuracy, float damage)
 	{
+		if (attacker == nullptr) return;
+
 		double angle = math::rad_to_deg * std::atan2(direction.Y, direction.X);
 
 		float randomizedDodge(math::clamp(m_Dodge * Random::Generator->NextFloat(0.15f, 1.15f), 0.0f, 1.0f));
@@ -376,23 +383,18 @@ namespace rat
 	{
 		Cell* cell = ptr_Parent->GetCell(where);
 
-		if (cell != nullptr)
-		{
-			if (!cell->IsVacant())
-			{
-				Push(cell->GetOccupant());
-			}
-		}
+		if (cell == nullptr) return;
+
+		if (!cell->IsVacant()) Push(cell->GetOccupant());
 	}
 
 	void Actor::Push(Actor* what)
-	{ 
-		if (what != nullptr)
-		{
-			Coord deltaPos(what->GetPosition() - m_Position);
+	{
+		if (what == nullptr) return;
 
-			what->Displace(this, deltaPos, true);
-		}
+		Coord deltaPos(what->GetPosition() - m_Position);
+
+		what->Displace(this, deltaPos, true);
 	}
 
 	void Actor::Displace(Actor* displacer, const Coord& to, bool offset)

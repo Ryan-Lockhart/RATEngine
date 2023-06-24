@@ -7,14 +7,68 @@
 #include "math.hpp"
 
 #include <stdexcept>
-#include <queue>
 #include <unordered_map>
+#include <queue>
+#include <stack>
+#include <algorithm>
+#include <iostream>
 
 namespace std
 {
 	std::size_t hash<rat::Coord>::operator()(const rat::Coord& id) const noexcept
 	{
 		return std::hash<int>()(id.X ^ ((id.Y << 16) ^ (id.Z) << 32));
+	}
+}
+
+struct NodeData
+{
+	rat::Coord position;
+	int distance;
+	int heuristic;
+
+	NodeData(const rat::Coord& pos, int dist, int h)
+		: position(pos), distance(dist), heuristic(h)
+	{ }
+
+	// Calculate the total cost by combining the distance and heuristic values
+	int getTotalCost() const
+	{
+		return distance + heuristic;
+	}
+};
+
+struct NodeDataComparator
+{
+	bool operator()(const NodeData& lhs, const NodeData& rhs) const
+	{
+		return lhs.getTotalCost() > rhs.getTotalCost();
+	}
+};
+
+enum class Distance
+{
+	Manhattan,
+	Chebyshev,
+	Octile,
+	Euclidean
+};
+
+int CalculateHeuristic(const rat::Coord& current, const rat::Coord& destination, const Distance& distance = Distance::Euclidean)
+{
+	int dx = std::abs(current.X - destination.X);
+	int dy = std::abs(current.Y - destination.Y);
+
+	switch (distance)
+	{
+		case Distance::Manhattan:
+			return dx + dy;
+		case Distance::Chebyshev:
+			return std::max(dx, dy);
+		case Distance::Octile:
+			return static_cast<int>(1.0 * (dx + dy) + (1.414 - 2.0 * 1.0) * std::min(dx, dy));
+		case Distance::Euclidean:
+			return static_cast<int>(sqrt((dx * dx) + (dy * dy)));
 	}
 }
 
@@ -32,7 +86,7 @@ namespace rat
 		delete m_Solids;
 
 		for (Cell* cell : *m_Cells)
-				delete (cell);
+			delete cell;
 
 		delete m_Cells;
 	}
@@ -82,10 +136,9 @@ namespace rat
 			for (int64_t y = 0; y < m_Bounds.Height; y++)
 				for (int64_t x = 0; x < m_Bounds.Width; x++)
 				{
-					Coord position{ x, y, z };
+					Coord coord{ x, y, z };
 
-					if (IsValid(position))
-						m_Solids->at(Index(position)) = WithinBounds(position) ? Random::Generator->NextBool(fillPercent) : true;
+					m_Solids->at(Index(coord)) = WithinBounds(coord) ? Random::Generator->NextBool(fillPercent) : true;
 				}
 	}
 
@@ -99,10 +152,9 @@ namespace rat
 				for (int64_t y = 0; y < m_Bounds.Height; y++)
 					for (int64_t x = 0; x < m_Bounds.Width; x++)
 					{
-						Coord position{ x, y, z };
+						Coord coord{ x, y, z };
 
-						if (IsValid(position))
-							smoothed->at(Index(position)) = WithinBounds(position) ? Automatize(position, threshold) : true;
+						smoothed->at(Index(coord)) = WithinBounds(coord) ? Automatize(coord, threshold) : true;
 					}
 
 			std::swap(m_Solids, smoothed);
@@ -150,6 +202,15 @@ namespace rat
 						m_Cells->at(Index(coord))->Reinitialize(coord, solid, solid);
 					else
 						m_Cells->at(Index(coord)) = new Cell(coord, this, solid, solid);
+				}
+
+		for (int64_t z = 0; z < m_Bounds.Depth; z++)
+			for (int64_t y = 0; y < m_Bounds.Height; y++)
+				for (int64_t x = 0; x < m_Bounds.Width; x++)
+				{
+					Coord coord{ x, y, z };
+
+					m_Cells->at(Index(coord))->GenerateNeighbourhood();
 				}
 
 		RecalculateIndices();
@@ -254,9 +315,11 @@ namespace rat
 				else glyphSet.DrawGlyph(m_Solids->at(Index(cellCoord)) ? Glyphs::ASCII::Wall : Glyphs::ASCII::Floor, Point{ m_Position.X + x, m_Position.Y + y } + offset);
 			}
 	}
+
 	bool Map::IsValid(const Coord& position) const
 	{
-		return position.X >= 0 && position.Y >= 0 && position.X < m_Bounds.Width && position.Y < m_Bounds.Height && position.Z >= 0 && position.Z < m_Bounds.Depth;
+		bool isFlat = m_Bounds.Depth == 1;
+		return position.X >= 0 && position.Y >= 0 && position.X < m_Bounds.Width && position.Y < m_Bounds.Height && position.Z >= 0 && (position.Z < m_Bounds.Depth || isFlat);
 	}
 
 	bool Map::WithinBounds(const Coord& position) const
@@ -271,49 +334,64 @@ namespace rat
 			if (cell != nullptr) cell->Update();
 	}
 
-	std::vector<Coord> Map::CalculatePath(const Coord& origin, const Coord& destination)
+	std::stack<Coord> Map::CalculatePath(const Coord& origin, const Coord& destination)
 	{
-		std::queue<Coord> frontier;
-		frontier.push(origin);
+		auto start = std::chrono::high_resolution_clock::now();
 
-		std::unordered_map<Coord, Coord> came_from;
-		came_from[origin] = origin;
+		std::priority_queue<NodeData, std::vector<NodeData>, NodeDataComparator> frontier;
+		frontier.push({ origin, 0, CalculateHeuristic(origin, destination) });
+
+		std::unordered_map <Coord, std::pair<Coord, int>> came_from;
+		came_from[origin] = std::make_pair(origin, 0);
 
 		while (!frontier.empty())
 		{
-			Coord current = frontier.front();
+			Coord current = frontier.top().position;
 			frontier.pop();
 
-			if (current == destination) {
+			if (current == destination)
 				break;
-			}
 
-			auto neighbourhood = GetNeighbourhood(current);
+			auto& neighbourhood = GetNeighbourhood(current);
 
-			for (int i = 0; i < neighbourhood.size(); i++)
+			for (const auto& neighborPtr : neighbourhood)
 			{
-				bool solid = neighbourhood.at(i)->IsSolid();
+				if (neighborPtr != nullptr)
+				{
+					Coord neighborPos = neighborPtr->GetPosition();
 
-				if (came_from.find((*neighbourhood.at(i)).GetPosition()) == came_from.end() && !solid) {
-					frontier.push((*neighbourhood.at(i)).GetPosition());
-					came_from[(*neighbourhood.at(i)).GetPosition()] = current;
+					bool solid = neighborPtr->IsSolid();
+					int newDistance = came_from[current].second + 1; // Assuming constant distance for adjacent cells
+
+					if ((came_from.find(neighborPos) == came_from.end() || newDistance < came_from[neighborPos].second) && !solid)
+					{
+						int heuristic = CalculateHeuristic(neighborPos, destination);
+						frontier.push({ neighborPos, newDistance, heuristic });
+						came_from[neighborPos] = std::make_pair(current, newDistance);
+					}
 				}
 			}
 		}
 
-		std::vector<Coord> path;
+		std::stack<Coord> path;
+
 		Coord current = destination;
-		if (came_from.find(destination) == came_from.end()) {
+		if (came_from.find(destination) == came_from.end())
+		{
 			return path;
 		}
-		while (current != origin) {
-			path.push_back(current);
-			current = came_from[current];
+		while (current != origin)
+		{
+			path.push(current);
+			current = came_from[current].first;
 		}
-		path.push_back(origin);
-		std::reverse(path.begin(), path.end());
 
 		return path;
+	}
+
+	std::vector<Cell*>& Map::GetNeighbourhood(const Coord& position)
+	{
+		return GetCell(position)->GetNeighbours();
 	}
 
 	std::vector<Cell*> Map::GetNeighbourhood(const Coord& position, bool returnNulls)
@@ -390,10 +468,10 @@ namespace rat
 		ResetSeen();
 
 		Coord shiftedOrigin = nudge > 0 ?
-		Coord{
+			Coord{
 			static_cast<coord_t>(origin.X + cos(math::deg_to_rad * angle) * -nudge),
-			origin.Y + static_cast<coord_t>(sin(math::deg_to_rad * angle) * -nudge),
-			origin.Z
+				origin.Y + static_cast<coord_t>(sin(math::deg_to_rad * angle) * -nudge),
+				origin.Z
 		} : origin;
 
 		viewDistance = std::max<double>(1, viewDistance);
@@ -442,7 +520,7 @@ namespace rat
 
 			fovVector.push_back(cell->GetPosition());
 		}
-		
+
 		for (int i = 0; i < 8; i++)
 		{
 			ShadowCast(origin, fovVector, 1, 1.0, 0.0, octants[i], viewDistance);
@@ -487,7 +565,7 @@ namespace rat
 
 		Coord shiftedOrigin = nudge > 0 ?
 			Coord{
-				static_cast<coord_t>(origin.X + cos(math::deg_to_rad * angle) * -nudge),
+			static_cast<coord_t>(origin.X + cos(math::deg_to_rad * angle) * -nudge),
 				origin.Y + static_cast<coord_t>(sin(math::deg_to_rad * angle) * -nudge),
 				origin.Z
 		} : origin;

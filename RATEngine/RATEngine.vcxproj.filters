@@ -39,9 +39,6 @@
     </Filter>
   </ItemGroup>
   <ItemGroup>
-    <None Include="packages.config" />
-  </ItemGroup>
-  <ItemGroup>
     <Image Include="assets\glyphs\glyphs_8x8.png">
       <Filter>Assets\Glyphs</Filter>
     </Image>
@@ -190,8 +187,8 @@
     <ClInclude Include="include\math.hpp">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="entity_traits.hpp">
-      <Filter>Header Files</Filter>
+    <ClInclude Include="include\entity_traits.hpp">
+      <Filter>Header Files\Interfaces</Filter>
     </ClInclude>
   </ItemGroup>
 </Project>

@@ -4,6 +4,7 @@
 #include "constants.hpp"
 
 #include <string>
+#include <stack>
 
 namespace rat
 {
@@ -102,6 +103,7 @@ namespace rat
 		Cell* ptr_Residency;
 
 		Actor* ptr_Target;
+		std::stack<Coord> m_Path;
 
 		Glyph m_Glyph;
 

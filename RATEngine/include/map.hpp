@@ -1,9 +1,12 @@
 #pragma once
 
 #include "constants.hpp"
+#include <queue>
 
-namespace std {
-	template <> struct hash<rat::Coord> {
+namespace std
+{
+	template <> struct hash<rat::Coord>
+	{
 		std::size_t operator()(const rat::Coord& id) const noexcept;
 	};
 }
@@ -71,9 +74,10 @@ namespace rat
 		std::vector<Coord> WithinFOV(const Coord& origin, double viewDistance, double angle, double span);
 		std::vector<Coord> WithinFOV(const Coord& origin, double viewDistance, double angle, double span, double nudge);
 
-		std::vector<Coord> CalculatePath(const Coord& origin, const Coord& destination);
+		std::stack<Coord> CalculatePath(const Coord& origin, const Coord& destination);
 
-		std::vector<Cell*> GetNeighbourhood(const Coord& position, bool returnNulls = false);
+		std::vector<Cell*>& GetNeighbourhood(const Coord& position);
+		std::vector<Cell*> GetNeighbourhood(const Coord& position, bool returnNulls);
 		uint8_t GetNeighbourCount(const Coord& position) const;
 
 	private:

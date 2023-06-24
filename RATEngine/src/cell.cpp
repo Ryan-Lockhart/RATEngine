@@ -47,6 +47,21 @@ namespace rat
 			delete corpse;
 	}
 
+	void Cell::GenerateNeighbourhood()
+	{
+		if (!vec_Neighbours.empty())
+			vec_Neighbours.clear();
+
+		for (int y_offset = -1; y_offset <= 1; y_offset++)
+			for (int x_offset = -1; x_offset <= 1; x_offset++)
+			{
+				Coord currentPosition{ m_Position.X + x_offset, m_Position.Y + y_offset, m_Position.Z };
+
+				if (currentPosition != m_Position)
+					vec_Neighbours.push_back(ptr_Parent->GetCell(currentPosition));
+			}
+	}
+
 	void Cell::Empty()
 	{
 		SetSolidity(false);
@@ -54,7 +69,7 @@ namespace rat
 
 		SetDirty();
 
-		for (auto& cell : ptr_Parent->GetNeighbourhood(m_Position))
+		for (auto& cell : vec_Neighbours)
 			cell->SetDirty();
 	}
 
