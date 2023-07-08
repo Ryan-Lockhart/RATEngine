@@ -122,8 +122,7 @@ namespace rat
 		{
 			if (m_Index == 0x00)
 			{
-				m_Index = 0x30;
-				m_Solid = true;
+				m_Solid = false;
 				m_Opaque = false;
 			}
 			else if (m_Index == 0x0F)

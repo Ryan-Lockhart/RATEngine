@@ -38,14 +38,18 @@ namespace rat
 	class Actor
 	{
 	public:
-		Actor(const std::string& name, const std::string& description, const Glyph& glyph, float health, float damage, float armor, float accuracy, float dodge, bool randomize, Cell* startingCell);
-		Actor(const std::string& name, const std::string& description, const Glyph& glyph, float health, float damage, float armor, float accuracy, float dodge, bool randomize, Map* map);
+		Actor(uint64_t id, const std::string& name, const std::string& description, const Glyph& glyph, int reach, float health, float damage, float armor, float accuracy, float dodge, bool randomize, Cell* startingCell, bool isAI = true);
+		Actor(uint64_t id, const std::string& name, const std::string& description, const Glyph& glyph, int reach, float health, float damage, float armor, float accuracy, float dodge, bool randomize, Map* map, bool isAI = true);
 
 		virtual void Update();
 
 		virtual void Act(const Coord& position, bool offset = true);
 		virtual void Act(const Coord& position, const Action& action, bool offset = true);
 		virtual void Draw(const GlyphSet& glyphSet, const Point& offset) const;
+
+		uint64_t GetID() const { return m_ID; }
+
+		bool IsAI() const { return m_IsAI; }
 
 		const std::string& GetName() const { return m_Name; }
 		const std::string& GetDescription() const { return m_Description; }
@@ -96,6 +100,10 @@ namespace rat
 		virtual void Mine(const Coord& where);
 		virtual void Mine(Cell* what);
 
+		uint64_t m_ID;
+
+		bool m_IsAI;
+
 		std::string m_Name;
 		std::string m_Description;
 
@@ -110,6 +118,8 @@ namespace rat
 		Coord m_Position;
 		double m_Angle;
 		Stance m_Stance;
+
+		int m_Reach;
 
 		bool m_Dead;
 		bool m_Bleeding;

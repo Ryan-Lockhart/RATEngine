@@ -51,6 +51,11 @@ namespace rat
 		/// </summary>
 		void CollectDead();
 
+		/// <summary>
+		/// Fetch their fetid souls from the warp!
+		/// </summary>
+		void SummonEnemies(uint64_t& currentID, int amount);
+
 	private:
 		unsigned long m_FPS;
 
@@ -77,9 +82,11 @@ namespace rat
 		Action m_CurrentAction;
 		Coord m_ActionPosition;
 
+		std::vector<Actor*>* ptr_vec_Actors;
 		std::vector<Actor*>* ptr_vec_Living;
 		std::vector<Actor*>* ptr_vec_Dead;
 
 		std::chrono::high_resolution_clock::time_point lastUpdateTime;
+		std::chrono::high_resolution_clock::time_point lastSummonTime;
 	};
 }

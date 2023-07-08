@@ -12,14 +12,15 @@ namespace rat
 {
 	std::list<std::string> messageLog{};
 
-	const Bounds mapSize = { 256, 256, 1 };
+	const Bounds mapSize = { 128, 128, 1 };
 
-	const size_t minimumEnemies = 500;
-	const size_t maximumEnemies = 1000;
+	const size_t minimumEnemies = 1;
+	const size_t maximumEnemies = 2;
 
 	Engine::Engine(uint64_t seed) :
 		ptr_Window(nullptr), ptr_Renderer(nullptr), ptr_GameSet(nullptr), ptr_UISet(nullptr),
-		ptr_Map(nullptr), ptr_Cursor(nullptr), ptr_Player(nullptr), ptr_vec_Living(nullptr), ptr_vec_Dead(nullptr),
+		ptr_Map(nullptr), ptr_Cursor(nullptr), ptr_Player(nullptr),
+		ptr_vec_Actors(nullptr), ptr_vec_Living(nullptr), ptr_vec_Dead(nullptr),
 		m_Fullscreen(false), m_PlayerActed(false), m_Locked(true), m_ShowControls(false)
 	{
 		if (SDL_Init(SDL_INIT_VIDEO) < 0)
@@ -37,10 +38,12 @@ namespace rat
 			windowSize.Height * 16,
 			SDL_WINDOW_SHOWN/* | SDL_WINDOW_ALWAYS_ON_TOP*/ | SDL_WINDOW_BORDERLESS
 		);
+
 		if (ptr_Window == nullptr)
 			throw(std::exception(SDL_GetError()));
 
 		ptr_Renderer = SDL_CreateRenderer(ptr_Window, -1, SDL_RENDERER_ACCELERATED);
+
 		if (ptr_Renderer == nullptr)
 			throw(std::exception(SDL_GetError()));
 
@@ -48,14 +51,17 @@ namespace rat
 		SDL_ShowCursor(SDL_DISABLE);
 
 		ptr_GameSet = new GlyphSet(ptr_Renderer, "assets/glyphs/tileset_16x16.png", Size{ 16, 16 }, { 16, 5 });
+
 		if (ptr_GameSet == nullptr)
 			throw("Game graphics failed to initialize!");
 
 		ptr_UISet = new GlyphSet(ptr_Renderer, "assets/glyphs/glyphs_12x12.png", Size{ 12, 12 }, { 16, 16 });
+
 		if (ptr_UISet == nullptr)
 			throw("Game graphics failed to initialize!");
 		
 		Random::Initialize(seed);
+
 		if (!Random::Initialized())
 			throw("Generator failed to initialize!");
 
@@ -75,47 +81,23 @@ namespace rat
 
 		ptr_Map->Populate();
 
-		ptr_Player = new Actor("Jenkins", "A spry lad clad in armor and blade", Glyphs::ASCII::Player, 10.0f, 5.0f, 7.5f, 0.50f, 0.75f, false, ptr_Map);
+		uint64_t currentID = 0;
+
+		ptr_Player = new Actor(currentID, "Jenkins", "A spry lad clad in armor and blade", Glyphs::ASCII::Player, 1, 10.0f, 5.0f, 7.5f, 0.50f, 0.75f, false, ptr_Map, false);
+
+		currentID++;
+
+
+		ptr_vec_Actors = new std::vector<Actor*>();
+		ptr_vec_Living = new std::vector<Actor*>();
+		ptr_vec_Dead = new std::vector<Actor*>();
+
+		ptr_vec_Actors->push_back(ptr_Player);
+		ptr_vec_Living->push_back(ptr_Player);
 
 		size_t totalEnemies = (size_t)Random::Generator->Next(minimumEnemies, maximumEnemies);
 
-		ptr_vec_Living = new std::vector<Actor*>(totalEnemies, nullptr);
-		ptr_vec_Dead = new std::vector<Actor*>(0, nullptr);
-
-		size_t maxEnemyTypes = 6;
-
-		for (int i = 0; i < totalEnemies; i++)
-		{
-			size_t next = Random::GetGenerator()->NextBool(0.00666) ? 7 : Random::GetGenerator()->NextBool(0.75) ? Random::Generator->Next(0, maxEnemyTypes / 2) : Random::Generator->Next(maxEnemyTypes / 2, maxEnemyTypes - 1);
-
-			switch (next)
-			{
-			case 0:
-				(*ptr_vec_Living)[i] = new Actor("Gremlin", "A dimunitive creature with a cunning disposition", Glyph{Characters::Entity, Colors::BrightYellow}, 1.5f, 0.65f, 0.0f, 0.266f, 0.475f, true, ptr_Map);
-				break;
-			case 1:
-				(*ptr_vec_Living)[i] = new Actor("Goblin", "A dexterous and selfish humanoid", Glyph{ Characters::Entity, Colors::LightGreen }, 3.5f, 1.25f, 0.5f, 0.375f, 0.675f, true, ptr_Map);
-				break;
-			case 2:
-				(*ptr_vec_Living)[i] = new Actor("Ork", "A brutal and violent humanoid", Glyph{Characters::Entity, Colors::BrightOrange}, 12.5f, 3.5f, 1.25f, 0.666f, 0.275f, true, ptr_Map);
-				break;
-			case 3:
-				(*ptr_vec_Living)[i] = new Actor("Troll", "A giant humaniod of great strength", Glyph{Characters::Entity, Colors::BrightRed}, 25.0f, 12.5f, 2.5f, 0.125f, 0.114f, true, ptr_Map);
-				break;
-			case 4:
-				(*ptr_vec_Living)[i] = new Actor("Draugr", "An undead servant of a wraith", Glyph{Characters::Entity, Colors::DarkMarble}, 7.5f, 2.5f, 5.0f, 0.675f, 0.221f, true, ptr_Map);
-				break;
-			case 5:
-				(*ptr_vec_Living)[i] = new Actor("Basilisk", "A large hexapedal reptile of terrible power", Glyph{Characters::Entity, Colors::Intrite}, 17.5f, 7.5f, 3.75f, 0.425f, 0.321f, true, ptr_Map);
-				break;
-			case 6:
-				(*ptr_vec_Living)[i] = new Actor("Serpentman", "A slithering humanoid with superior agility", Glyph{ Characters::Entity, Colors::BrightBlue }, 17.5f, 7.5f, 3.75f, 0.425f, 0.321f, true, ptr_Map);
-				break;
-			case 7:
-				(*ptr_vec_Living)[i] = new Actor("Wraith", "An eldritch abomination! Woe upon thee...", Glyph{ Characters::Entity, Colors::BrightMagenta }, 125.0f, 75.0f, 30.0f, 0.75f, 0.975f, true, ptr_Map);
-				break;
-			}
-		}
+		SummonEnemies(currentID, totalEnemies);
 
 		while (!exit)
 		{
@@ -199,15 +181,11 @@ namespace rat
 		delete ptr_UISet;
 		delete ptr_GameSet;
 		delete ptr_Cursor;
-		delete ptr_Player;
-		
-		for (int i = 0; i < ptr_vec_Living->size(); i++)
-			delete ptr_vec_Living->at(i);
-		delete ptr_vec_Living;
 
-		for (int i = 0; i < ptr_vec_Dead->size(); i++)
-			delete ptr_vec_Dead->at(i);
-		delete ptr_vec_Dead;
+		for (int i = 0; i < ptr_vec_Actors->size(); i++)
+			delete ptr_vec_Actors->at(i);
+
+		delete ptr_vec_Actors;
 
 		delete ptr_Map;
 
@@ -854,5 +832,48 @@ namespace rat
 		living = nullptr;
 		delete dead;
 		dead = nullptr;
+	}
+
+	void Engine::SummonEnemies(uint64_t& currentID, int amount)
+	{
+		for (int i = 0; i < amount; i++)
+		{
+			size_t next = Random::GetGenerator()->NextBool(0.00666) ? 7 : Random::GetGenerator()->NextBool(0.75) ? Random::Generator->Next(0, maxEnemyTypes / 2) : Random::Generator->Next(maxEnemyTypes / 2, maxEnemyTypes - 1);
+
+			Actor* newlySpawned;
+
+			switch (next)
+			{
+			case 0:
+				newlySpawned = new Actor(currentID, "Gremlin", "A dimunitive creature with a cunning disposition", Glyph{ Characters::Entity, Colors::BrightYellow }, 1, 1.5f, 0.65f, 0.0f, 0.266f, 0.475f, true, ptr_Map);
+				break;
+			case 1:
+				newlySpawned = new Actor(currentID, "Goblin", "A dexterous and selfish humanoid", Glyph{ Characters::Entity, Colors::LightGreen }, 1, 3.5f, 1.25f, 0.5f, 0.375f, 0.675f, true, ptr_Map);
+				break;
+			case 2:
+				newlySpawned = new Actor(currentID, "Ork", "A brutal and violent humanoid", Glyph{ Characters::Entity, Colors::BrightOrange }, 1, 12.5f, 3.5f, 1.25f, 0.666f, 0.275f, true, ptr_Map);
+				break;
+			case 3:
+				newlySpawned = new Actor(currentID, "Troll", "A giant humaniod of great strength", Glyph{ Characters::Entity, Colors::BrightRed }, 1, 25.0f, 12.5f, 2.5f, 0.125f, 0.114f, true, ptr_Map);
+				break;
+			case 4:
+				newlySpawned = new Actor(currentID, "Draugr", "An undead servant of a wraith", Glyph{ Characters::Entity, Colors::DarkMarble }, 1, 7.5f, 2.5f, 5.0f, 0.675f, 0.221f, true, ptr_Map);
+				break;
+			case 5:
+				newlySpawned = new Actor(currentID, "Basilisk", "A large hexapedal reptile of terrible power", Glyph{ Characters::Entity, Colors::Intrite }, 1, 17.5f, 7.5f, 3.75f, 0.425f, 0.321f, true, ptr_Map);
+				break;
+			case 6:
+				newlySpawned = new Actor(currentID, "Serpentman", "A slithering humanoid with superior agility", Glyph{ Characters::Entity, Colors::BrightBlue }, 1, 17.5f, 7.5f, 3.75f, 0.425f, 0.321f, true, ptr_Map);
+				break;
+			case 7:
+				newlySpawned = new Actor(currentID, "Wraith", "An eldritch abomination! Woe upon thee...", Glyph{ Characters::Entity, Colors::BrightMagenta }, 2, 125.0f, 75.0f, 30.0f, 0.75f, 0.975f, true, ptr_Map);
+				break;
+			}
+
+			ptr_vec_Actors->push_back(newlySpawned);
+			ptr_vec_Living->push_back(newlySpawned);
+
+			currentID++;
+		}
 	}
 }

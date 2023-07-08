@@ -28,7 +28,8 @@ namespace rat
 	extern std::list<std::string> messageLog;
 	constexpr int maxMessages = 21;
 
-	constexpr unsigned long long minimumUpdateTime = 1000;
+	constexpr unsigned long long minimumUpdateTime = 500;
+	constexpr unsigned long long minimumSummonTime = 30000;
 
 	extern const char* windowTitle;
 
@@ -44,6 +45,8 @@ namespace rat
 	const bool noclipMode = false;
 
 	const int cameraSpeed = 5;
+
+	const int maxEnemyTypes = 6;
 
 	static std::string lastMessage("");
 

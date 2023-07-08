@@ -10,14 +10,16 @@
 
 namespace rat
 {
-	Actor::Actor(const std::string& name, const std::string& description, const Glyph& glyph, float health, float damage, float armor, float accuracy, float dodge, bool randomize, Cell* startingCell) :
-		ptr_Residency(nullptr), ptr_Parent(nullptr), ptr_Target(nullptr), m_Glyph(glyph),
-		m_Name(name), m_Description(description), m_Angle(0.0), m_Stance(Stance::Erect), m_Dead(false), m_Bleeding(false),
+	Actor::Actor(uint64_t id, const std::string& name, const std::string& description, const Glyph& glyph, int reach, float health, float damage, float armor, float accuracy, float dodge, bool randomize, Cell* startingCell, bool isAI) :
+		ptr_Residency(nullptr), ptr_Parent(nullptr), ptr_Target(nullptr),
+		m_ID(id), m_IsAI(isAI), m_Name(name), m_Description(description), m_Glyph(glyph),
+		m_Angle(0.0), m_Stance(Stance::Erect), m_Dead(false), m_Bleeding(false),
 		m_MaxHealth(randomize ? Random::GetGenerator()->NextFloat(0.9f, 1.1f) * health : health), m_CurrentHealth(m_MaxHealth),
 		m_Damage(randomize ? Random::GetGenerator()->NextFloat(0.9f, 1.1f) * damage : damage),
 		m_Armor(randomize ? Random::GetGenerator()->NextFloat(0.9f, 1.1f) * armor : damage),
 		m_Accuracy(randomize ? Random::GetGenerator()->NextFloat(0.9f, 1.1f) * accuracy : accuracy),
-		m_Dodge(randomize ? Random::GetGenerator()->NextFloat(0.9f, 1.1f) * dodge : dodge)
+		m_Dodge(randomize ? Random::GetGenerator()->NextFloat(0.9f, 1.1f) * dodge : dodge),
+		m_Reach(reach)
 	{
 		if (startingCell != nullptr)
 		{
@@ -29,14 +31,16 @@ namespace rat
 		else throw printf("Uninitialized cell given as an actor parameter!");
 	}
 
-	Actor::Actor(const std::string& name, const std::string& description, const Glyph& glyph, float health, float damage, float armor, float accuracy, float dodge, bool randomize, Map* map) :
-		ptr_Residency(nullptr), ptr_Parent(nullptr), ptr_Target(nullptr), m_Glyph(glyph),
-		m_Name(name), m_Description(description), m_Angle(0.0), m_Stance(Stance::Erect), m_Dead(false), m_Bleeding(false),
+	Actor::Actor(uint64_t id, const std::string& name, const std::string& description, const Glyph& glyph, int reach, float health, float damage, float armor, float accuracy, float dodge, bool randomize, Map* map, bool isAI) :
+		ptr_Residency(nullptr), ptr_Parent(nullptr), ptr_Target(nullptr),
+		m_ID(id), m_IsAI(isAI), m_Name(name), m_Description(description), m_Glyph(glyph),
+		m_Angle(0.0), m_Stance(Stance::Erect), m_Dead(false), m_Bleeding(false),
 		m_MaxHealth(randomize ? Random::GetGenerator()->NextFloat(0.9f, 1.1f) * health : health), m_CurrentHealth(m_MaxHealth),
 		m_Damage(randomize ? Random::GetGenerator()->NextFloat(0.9f, 1.1f) * damage : damage),
 		m_Armor(randomize ? Random::GetGenerator()->NextFloat(0.9f, 1.1f) * armor : damage),
 		m_Accuracy(randomize ? Random::GetGenerator()->NextFloat(0.9f, 1.1f) * accuracy : accuracy),
-		m_Dodge(randomize ? Random::GetGenerator()->NextFloat(0.9f, 1.1f) * dodge : dodge)
+		m_Dodge(randomize ? Random::GetGenerator()->NextFloat(0.9f, 1.1f) * dodge : dodge),
+		m_Reach(reach)
 	{
 		Cell* cell = map->FindOpen(1.0f);
 
@@ -52,52 +56,57 @@ namespace rat
 
 	void Actor::Update()
 	{
-		if (m_Dead) return;
-		else m_Dead = m_CurrentHealth <= 0;
-
 		if (IsAlive())
+			m_Dead = m_CurrentHealth <= 0;
+
+		if (IsDead()) return;
+		if (!IsAI()) return;
+
+		std::vector<Coord> fov = ptr_Parent->WithinFOV(m_Position, 32.0, m_Angle, 135.0);
+
+		Actor* closestActor(nullptr);
+		double closestDistance(0.0);
+
+		for (auto& position : fov)
 		{
-			std::vector<Coord> fov = ptr_Parent->WithinFOV(m_Position, 32.0, m_Angle, 135.0);
+			Cell* cell = ptr_Parent->GetCell(position);
 
-			Actor* closestActor(nullptr);
-			double closestDistance(0.0);
+			if (cell == nullptr) continue;
 
-			for (auto& position : fov)
+			Actor* actor = cell->GetOccupant();
+
+			if (actor == nullptr) continue;
+
+			if (actor == this || !actor->IsAlive()) continue;
+
+			Coord delta(actor->GetPosition() - m_Position);
+			double distance(math::normalize((double)delta.X, (double)delta.Y));
+
+			if (closestActor == nullptr)
 			{
-				Cell* cell = ptr_Parent->GetCell(position);
-
-				if (cell == nullptr) continue;
-
-				Actor* actor = cell->GetOccupant();
-
-				if (actor == nullptr) continue;
-
-				if (actor == this || !actor->IsAlive()) continue;
-
-				Coord delta(actor->GetPosition() - m_Position);
-				double distance(math::normalize((double)delta.X, (double)delta.Y));
-
-				if (closestActor == nullptr)
+				closestActor = actor;
+				closestDistance = distance;
+			}
+			else
+			{
+				if (closestDistance > distance)
 				{
 					closestActor = actor;
 					closestDistance = distance;
 				}
-				else
-				{
-					if (closestDistance > distance)
-					{
-						closestActor = actor;
-						closestDistance = distance;
-					}
-				}
 			}
+		}
 
-			ptr_Target = closestActor;
+		ptr_Target = closestActor;
 
-			if (ptr_Target != nullptr)
+		if (ptr_Target != nullptr)
+		{
+			Coord targetPosition = ptr_Target->GetPosition();
+
+			if (WithinReach(targetPosition)) Act(targetPosition, false);
+			else
 			{
-				if (m_Path.empty())
-					m_Path = ptr_Parent->CalculatePath(m_Position, ptr_Target->GetPosition());
+				m_Path = ptr_Parent->CalculatePath(m_Position, targetPosition);
 
 				if (!m_Path.empty())
 				{
@@ -105,34 +114,36 @@ namespace rat
 					m_Path.pop();
 				}
 			}
+		}
+		else
+		{
+			if (m_Path.empty())
+			{
+				Coord wanderTarget{ 0, 0, 0 };
+
+				bool is_valid = false;
+
+				while (!is_valid)
+				{
+					wanderTarget = Coord{ Random::GetGenerator()->Next(-10, 11), Random::GetGenerator()->Next(-10, 11), 0 } + m_Position;
+					is_valid = !ptr_Parent->GetCell(wanderTarget)->IsSolid();
+				}
+
+				m_Path = ptr_Parent->CalculatePath(m_Position, wanderTarget);
+			}
 			else
 			{
-				if (m_Path.empty())
-				{
-					Coord wanderTarget{ 0, 0, 0 };
-
-					bool is_valid = false;
-
-					while (!is_valid)
-					{
-						wanderTarget = Coord{ Random::GetGenerator()->Next(-10, 11), Random::GetGenerator()->Next(-10, 11), 0 } + m_Position;
-						is_valid = !ptr_Parent->GetCell(wanderTarget)->IsSolid();
-					}
-
-					m_Path = ptr_Parent->CalculatePath(m_Position, wanderTarget);
-				}
-				else
-				{
-					Act(m_Path.top(), false);
-					m_Path.pop();
-				}
+				Act(m_Path.top(), false);
+				m_Path.pop();
 			}
 		}
 	}
 
 	void Actor::Act(const Coord& position, bool offset)
 	{
-		if (m_Dead) return;
+		if (IsDead()) return;
+
+		if (ptr_Parent == nullptr) throw(std::exception("Orphaned actors cannot act!"));
 
 		if (m_Bleeding)
 		{
@@ -157,8 +168,6 @@ namespace rat
 
 		m_Angle = math::rad_to_deg * std::atan2(delta.Y, delta.X);
 
-		if (ptr_Parent == nullptr) throw(std::exception("Orphaned actors cannot act!"));
-
 		if (ptr_Parent->WithinBounds(actPosition))
 		{
 			Cell* currentCell = ptr_Parent->GetCell(actPosition);
@@ -174,7 +183,9 @@ namespace rat
 
 	void Actor::Act(const Coord& position, const Action& action, bool offset)
 	{
-		if (m_Dead) return;
+		if (IsDead()) return;
+
+		if (ptr_Parent == nullptr) throw(std::exception("Orphaned actors cannot act!"));
 
 		if (m_Bleeding)
 		{
@@ -200,8 +211,6 @@ namespace rat
 		Coord delta{ actPosition - m_Position };
 
 		m_Angle = math::rad_to_deg * std::atan2(delta.Y, delta.X);
-
-		if (ptr_Parent == nullptr) throw(std::exception("Orphaned actors cannot act!"));
 
 		if (ptr_Parent->WithinBounds(actPosition) && action != Action::LookAt)
 		{
@@ -240,7 +249,7 @@ namespace rat
 
 	void Actor::Move(Cell* to)
 	{
-		if (to != ptr_Residency && WithinReach(to->GetPosition() - GetPosition()))
+		if (to != ptr_Residency && WithinReach(*to))
 		{
 			ptr_Residency->Vacate();
 			ptr_Residency = to;
@@ -267,13 +276,11 @@ namespace rat
 	{
 		Cell* cell = ptr_Parent->GetCell(where);
 
-		if (cell != nullptr)
-		{
-			if (!cell->IsVacant())
-			{
-				Attack(cell->GetOccupant());
-			}
-		}
+		if (cell == nullptr) return;
+
+		if (cell->IsVacant() || !WithinReach(*cell)) return;
+
+		Attack(cell->GetOccupant());
 	}
 
 	void Actor::Attack(Actor* what)
@@ -385,6 +392,8 @@ namespace rat
 
 		if (cell == nullptr) return;
 
+		if (!WithinReach(*cell)) return;
+
 		if (!cell->IsVacant()) Push(cell->GetOccupant());
 	}
 
@@ -423,7 +432,11 @@ namespace rat
 	{
 		Cell* cell = ptr_Parent->GetCell(where);
 
-		if (cell != nullptr) cell->Empty();
+		if (cell == nullptr) return;
+
+		if (!WithinReach(*cell)) return;
+
+		cell->Empty();
 	}
 
 	void Actor::Mine(Cell* what)
@@ -440,14 +453,14 @@ namespace rat
 	{
 		Coord deltaPosition = position - m_Position;
 
-		return abs(deltaPosition.X) > 1 || (abs(deltaPosition.Y) > 1);
+		return abs(deltaPosition.X) <= m_Reach && (abs(deltaPosition.Y) <= m_Reach);
 	}
 
 	bool Actor::WithinReach(const Cell& cell) const
 	{
 		Coord deltaPosition = cell.GetPosition() - m_Position;
 
-		return abs(deltaPosition.X) > 1 || (abs(deltaPosition.Y) > 1);
+		return abs(deltaPosition.X) <= m_Reach && (abs(deltaPosition.Y) <= m_Reach);
 	}
 }
 
