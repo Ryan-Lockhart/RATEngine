@@ -1,8 +1,6 @@
 #include "engine.hpp"
 #include "glyph_set.hpp"
 #include "constants.hpp"
-#include "mt_engine.hpp"
-#include "actor.hpp"
 
 #include "cell.hpp"
 
@@ -12,12 +10,12 @@ namespace rat
 {
 	std::list<std::string> messageLog{};
 
-	const Bounds mapSize = { 128, 128, 1 };
+	const Bounds mapSize = { 256, 256, 1 };
 
-	const size_t minimumEnemies = 1;
-	const size_t maximumEnemies = 2;
+	const size_t minimumEnemies = 1000;
+	const size_t maximumEnemies = 2000;
 
-	Engine::Engine(uint64_t seed) :
+	Engine::Engine(random::seed_t seed) :
 		ptr_Window(nullptr), ptr_Renderer(nullptr), ptr_GameSet(nullptr), ptr_UISet(nullptr),
 		ptr_Map(nullptr), ptr_Cursor(nullptr), ptr_Player(nullptr),
 		ptr_vec_Actors(nullptr), ptr_vec_Living(nullptr), ptr_vec_Dead(nullptr),
@@ -60,10 +58,7 @@ namespace rat
 		if (ptr_UISet == nullptr)
 			throw("Game graphics failed to initialize!");
 		
-		Random::Initialize(seed);
-
-		if (!Random::Initialized())
-			throw("Generator failed to initialize!");
+		random::RandomEngine::Initialize(random::GeneratorTypes::MTEngine, seed);
 
 		bool exit = false;
 
@@ -87,7 +82,6 @@ namespace rat
 
 		currentID++;
 
-
 		ptr_vec_Actors = new std::vector<Actor*>();
 		ptr_vec_Living = new std::vector<Actor*>();
 		ptr_vec_Dead = new std::vector<Actor*>();
@@ -95,7 +89,7 @@ namespace rat
 		ptr_vec_Actors->push_back(ptr_Player);
 		ptr_vec_Living->push_back(ptr_Player);
 
-		size_t totalEnemies = (size_t)Random::Generator->Next(minimumEnemies, maximumEnemies);
+		size_t totalEnemies = (size_t)random::RandomEngine::GetGenerator()->NextInt(minimumEnemies, maximumEnemies);
 
 		SummonEnemies(currentID, totalEnemies);
 
@@ -838,7 +832,7 @@ namespace rat
 	{
 		for (int i = 0; i < amount; i++)
 		{
-			size_t next = Random::GetGenerator()->NextBool(0.00666) ? 7 : Random::GetGenerator()->NextBool(0.75) ? Random::Generator->Next(0, maxEnemyTypes / 2) : Random::Generator->Next(maxEnemyTypes / 2, maxEnemyTypes - 1);
+			size_t next = random::RandomEngine::GetGenerator()->NextBool(0.00666) ? 7 : random::RandomEngine::GetGenerator()->NextBool(0.75) ? random::RandomEngine::GetGenerator()->NextInt(0, maxEnemyTypes / 2) : random::RandomEngine::GetGenerator()->NextInt(maxEnemyTypes / 2, maxEnemyTypes - 1);
 
 			Actor* newlySpawned;
 

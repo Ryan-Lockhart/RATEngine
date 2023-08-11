@@ -1,17 +1,31 @@
 #pragma once
 
 #include <random>
+#include <mutex>
+#include <memory>
 
 namespace rat
 {
-	namespace Random
+	namespace random
 	{
+		using seed_t = uint64_t;
+
+		enum class GeneratorTypes
+		{
+			MTEngine,
+			LCGEngine,
+			FibonacciEngine
+		};
+
 		/// <summary>
 		/// A pure virtual base class for RATEngine psuedo random number generation
 		/// </summary>
 		class IGenerator
 		{
 		public:
+
+			IGenerator();
+			IGenerator(seed_t seed);
 
 			/// <summary>
 			/// Generate a single random integer value without a range
@@ -202,8 +216,32 @@ namespace rat
 			/// <param name="append"></param>
 			virtual void Bools(std::vector<bool>& vec, int amount, double probability, bool append) = 0;
 
+		protected:
+
+			virtual void SetSeed(seed_t seed);
+			virtual seed_t GetSeed() const;
+
+			template<typename T>
+			void CheckRange(T& min, T& max);
+
 		private:
 
+			seed_t m_Seed;
+
 		};
-	}
+
+		class InvalidRangeException : std::exception
+		{
+		private:
+			const char* message;
+
+		public:
+			InvalidRangeException(const char* message);
+			const char* what() const;
+		};
+
+		template void IGenerator::CheckRange<int>(int&, int&);
+		template void IGenerator::CheckRange<float>(float&, float&);
+		template void IGenerator::CheckRange<double>(double&, double&);
+}
 }

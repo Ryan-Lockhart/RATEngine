@@ -2,13 +2,21 @@
 
 namespace rat
 {
-    namespace Random
+    namespace random
     {
         LCGEngine::LCGEngine() :
-            m_Seed(std::random_device()()), m_Generator(m_Seed) { }
+            IGenerator(), m_Generator(GetSeed()) { }
 
-        LCGEngine::LCGEngine(int seed) :
-            m_Seed(seed), m_Generator(m_Seed) { }
+        LCGEngine::LCGEngine(seed_t seed) :
+            IGenerator(seed), m_Generator(GetSeed()) { }
+
+        void LCGEngine::SetSeed(seed_t seed)
+        {
+            IGenerator::SetSeed(seed);
+            m_Generator.seed(seed);
+        }
+
+        seed_t LCGEngine::GetSeed() const { return IGenerator::GetSeed(); }
 
         int LCGEngine::NextInt() { return std::uniform_int_distribution<int>()(m_Generator); }
 

@@ -2,7 +2,7 @@
 #include "actor.hpp"
 
 #include "transform.hpp"
-#include "mt_engine.hpp"
+#include "random_engine.hpp"
 
 #include <iostream>
 
@@ -126,16 +126,16 @@ namespace rat
 				m_Opaque = false;
 			}
 			else if (m_Index == 0x0F)
-				m_Index = Random::GetGenerator()->NextBool(0.5) ? 0x1F : 0x3F;
+				m_Index = random::RandomEngine::GetGenerator()->NextBool(0.5) ? 0x1F : 0x3F;
 			else if (m_Index == 0x00)
-				m_Index = Random::GetGenerator()->NextBool(0.5) ? 0x30 : 0x10;
-			else m_Index += Random::GetGenerator()->NextBool(0.75) ? 0x30 : 0x10;
+				m_Index = random::RandomEngine::GetGenerator()->NextBool(0.5) ? 0x30 : 0x10;
+			else m_Index += random::RandomEngine::GetGenerator()->NextBool(0.75) ? 0x30 : 0x10;
 		}
 		else
 		{
 			if (m_Index == 0x0F)
-				m_Index = Random::GetGenerator()->NextBool(0.5) ? 0x0F : 0x2F;
-			else m_Index += Random::GetGenerator()->NextBool(0.75) ? 0x00 : 0x20;
+				m_Index = random::RandomEngine::GetGenerator()->NextBool(0.5) ? 0x0F : 0x2F;
+			else m_Index += random::RandomEngine::GetGenerator()->NextBool(0.75) ? 0x00 : 0x20;
 		}
 
 		if (m_Index > 0x4F)

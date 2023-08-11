@@ -4,14 +4,14 @@
 
 namespace rat
 {
-	namespace Random
+	namespace random
 	{
 		class LCGEngine : public IGenerator
 		{
 		public:
 
 			LCGEngine();
-			LCGEngine(int seed);
+			LCGEngine(seed_t seed);
 
 			virtual int NextInt() override;
 			virtual int NextInt(int min, int max) override;
@@ -49,9 +49,12 @@ namespace rat
 			virtual std::vector<bool> Bools(int amount, double probability) override;
 			virtual void Bools(std::vector<bool>& vec, int amount, double probability, bool append) override;
 
-		private:
+		protected:
 
-			int m_Seed;
+			virtual void SetSeed(seed_t seed) override;
+			virtual seed_t GetSeed() const override;
+
+		private:
 
 			std::minstd_rand m_Generator;
 

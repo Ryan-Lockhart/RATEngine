@@ -2,13 +2,21 @@
 
 namespace rat
 {
-    namespace Random
+    namespace random
     {
         FibonacciEngine::FibonacciEngine() :
-            m_Seed(std::random_device()()), m_Generator(m_Seed) { }
+            IGenerator(), m_Generator(GetSeed()) { }
 
-        FibonacciEngine::FibonacciEngine(int seed) :
-            m_Seed(seed), m_Generator(m_Seed) { }
+        FibonacciEngine::FibonacciEngine(seed_t seed) :
+            IGenerator(seed), m_Generator(GetSeed()) { }
+
+        void FibonacciEngine::SetSeed(seed_t seed)
+        {
+            IGenerator::SetSeed(seed);
+            m_Generator.seed(seed);
+        }
+
+        seed_t FibonacciEngine::GetSeed() const { return IGenerator::GetSeed(); }
 
         int FibonacciEngine::NextInt() { return std::uniform_int_distribution<int>()(m_Generator); }
 

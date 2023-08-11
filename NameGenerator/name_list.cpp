@@ -2,6 +2,8 @@
 
 #include <iostream>
 #include <fstream>
+#include <string>
+#include <cctype>
 
 namespace rat
 {
@@ -17,7 +19,7 @@ namespace rat
 			Load(path);
 		}
 
-		NameList::NameList(const std::vector<std::string>& names)
+		NameList::NameList(const std::list<std::string>& names)
 		{
 			for (auto& name : names)
 				if (name != "")
@@ -42,14 +44,16 @@ namespace rat
 			Sort();
 		}
 
-		const std::vector<std::string>& NameList::Expose()
+		const std::list<std::string>& NameList::Expose()
 		{
-			
+			return m_Names;
 		}
 
 		void NameList::Save(const std::string& path)
 		{
 			Sort();
+
+			std::ofstream writer(path);
 
 			char previousLetter = '\0';
 
@@ -57,33 +61,48 @@ namespace rat
 			{
 				if (name == "") break;
 
-				if (char.ToLower(name[0]) != char.ToLower(previousLetter) && previousLetter != '\0')
-					writer.WriteLine();
+				if (std::tolower(name[0]) != std::tolower(previousLetter) && previousLetter != '\0')
+					writer << std::endl;
 
-				writer.Write(name + ";");
+				writer << name + ";";
 
 				previousLetter = name[0];
 			}
+
+			writer.close();
 		}
 
 		void NameList::Add(const std::string& name)
 		{
-
+			m_Names.push_back(name);
 		}
 
 		void NameList::Remove(const std::string& name)
 		{
-
+			m_Names.remove(name);
 		}
 
 		ProbabilityMatrix NameList::CreateMatrix()
 		{
+			auto weights = new double[NameGenerator::DefaultAlphabet, Globals.Alphabet.Size];
 
+			for (auto& name : m_Names)
+			{
+				for (int i = 0; i < name.size() - 1; i++)
+				{
+					Letter letter_one = Globals.Alphabet[name[i]];
+					Letter letter_two = Globals.Alphabet[name[i + 1]];
+
+					weights[letter_one.Index, letter_two.Index]++;
+				}
+			}
+
+			return new ProbabilityMatrix(ref weights);
 		}
 
 		void NameList::Sort()
 		{
-
+			m_Names.sort();
 		}
 	}
 }

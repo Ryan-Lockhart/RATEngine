@@ -214,7 +214,6 @@
     <ClCompile Include="src\grid.cpp" />
     <ClCompile Include="src\map.cpp" />
     <ClCompile Include="src\math.cpp" />
-    <ClCompile Include="src\mt_engine.cpp" />
     <ClCompile Include="src\octant.cpp" />
     <ClCompile Include="src\point.cpp" />
     <ClCompile Include="src\program.cpp" />
@@ -239,7 +238,6 @@
     <ClInclude Include="include\grid.hpp" />
     <ClInclude Include="include\map.hpp" />
     <ClInclude Include="include\math.hpp" />
-    <ClInclude Include="include\mt_engine.hpp" />
     <ClInclude Include="include\octant.hpp" />
     <ClInclude Include="include\point.hpp" />
     <ClInclude Include="include\rect.hpp" />
@@ -248,9 +246,6 @@
     <ClInclude Include="include\zone.hpp" />
   </ItemGroup>
   <ItemGroup>
-    <ProjectReference Include="..\NameGenerator\NameGenerator.vcxproj">
-      <Project>{545cc96e-bb5e-44fa-a3e1-86de87489e42}</Project>
-    </ProjectReference>
     <ProjectReference Include="..\RandomEngine\RandomEngine.vcxproj">
       <Project>{71ea2c82-8998-400c-b3e0-0915a59d85c2}</Project>
     </ProjectReference>

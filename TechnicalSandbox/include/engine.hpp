@@ -11,7 +11,7 @@
 #include "rect.hpp"
 #include "transform.hpp"
 
-#include "mt_engine.hpp"
+#include "random_engine.hpp"
 
 #include "actor.hpp"
 #include "map.hpp"
@@ -25,7 +25,7 @@ namespace rat
 	class Engine
 	{
 	public:
-		Engine(uint64_t seed);
+		Engine(random::seed_t seed);
 		~Engine();
 
 		void ToggleFullscreen() { m_Fullscreen = !m_Fullscreen; SDL_SetWindowFullscreen(ptr_Window, m_Fullscreen ? SDL_WINDOW_FULLSCREEN_DESKTOP : 0); }

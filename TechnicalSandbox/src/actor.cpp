@@ -1,7 +1,7 @@
 #include "cell.hpp"
 #include "map.hpp"
 #include "actor.hpp"
-#include "mt_engine.hpp"
+#include "random_engine.hpp"
 #include "glyph_set.hpp"
 #include "constants.hpp"
 #include <iostream>
@@ -14,11 +14,11 @@ namespace rat
 		ptr_Residency(nullptr), ptr_Parent(nullptr), ptr_Target(nullptr),
 		m_ID(id), m_IsAI(isAI), m_Name(name), m_Description(description), m_Glyph(glyph),
 		m_Angle(0.0), m_Stance(Stance::Erect), m_Dead(false), m_Bleeding(false),
-		m_MaxHealth(randomize ? Random::GetGenerator()->NextFloat(0.9f, 1.1f) * health : health), m_CurrentHealth(m_MaxHealth),
-		m_Damage(randomize ? Random::GetGenerator()->NextFloat(0.9f, 1.1f) * damage : damage),
-		m_Armor(randomize ? Random::GetGenerator()->NextFloat(0.9f, 1.1f) * armor : damage),
-		m_Accuracy(randomize ? Random::GetGenerator()->NextFloat(0.9f, 1.1f) * accuracy : accuracy),
-		m_Dodge(randomize ? Random::GetGenerator()->NextFloat(0.9f, 1.1f) * dodge : dodge),
+		m_MaxHealth(randomize ? random::RandomEngine::GetGenerator()->NextFloat(0.9f, 1.1f) * health : health), m_CurrentHealth(m_MaxHealth),
+		m_Damage(randomize ? random::RandomEngine::GetGenerator()->NextFloat(0.9f, 1.1f) * damage : damage),
+		m_Armor(randomize ? random::RandomEngine::GetGenerator()->NextFloat(0.9f, 1.1f) * armor : damage),
+		m_Accuracy(randomize ? random::RandomEngine::GetGenerator()->NextFloat(0.9f, 1.1f) * accuracy : accuracy),
+		m_Dodge(randomize ? random::RandomEngine::GetGenerator()->NextFloat(0.9f, 1.1f) * dodge : dodge),
 		m_Reach(reach)
 	{
 		if (startingCell != nullptr)
@@ -35,11 +35,11 @@ namespace rat
 		ptr_Residency(nullptr), ptr_Parent(nullptr), ptr_Target(nullptr),
 		m_ID(id), m_IsAI(isAI), m_Name(name), m_Description(description), m_Glyph(glyph),
 		m_Angle(0.0), m_Stance(Stance::Erect), m_Dead(false), m_Bleeding(false),
-		m_MaxHealth(randomize ? Random::GetGenerator()->NextFloat(0.9f, 1.1f) * health : health), m_CurrentHealth(m_MaxHealth),
-		m_Damage(randomize ? Random::GetGenerator()->NextFloat(0.9f, 1.1f) * damage : damage),
-		m_Armor(randomize ? Random::GetGenerator()->NextFloat(0.9f, 1.1f) * armor : damage),
-		m_Accuracy(randomize ? Random::GetGenerator()->NextFloat(0.9f, 1.1f) * accuracy : accuracy),
-		m_Dodge(randomize ? Random::GetGenerator()->NextFloat(0.9f, 1.1f) * dodge : dodge),
+		m_MaxHealth(randomize ? random::RandomEngine::GetGenerator()->NextFloat(0.9f, 1.1f) * health : health), m_CurrentHealth(m_MaxHealth),
+		m_Damage(randomize ? random::RandomEngine::GetGenerator()->NextFloat(0.9f, 1.1f) * damage : damage),
+		m_Armor(randomize ? random::RandomEngine::GetGenerator()->NextFloat(0.9f, 1.1f) * armor : damage),
+		m_Accuracy(randomize ? random::RandomEngine::GetGenerator()->NextFloat(0.9f, 1.1f) * accuracy : accuracy),
+		m_Dodge(randomize ? random::RandomEngine::GetGenerator()->NextFloat(0.9f, 1.1f) * dodge : dodge),
 		m_Reach(reach)
 	{
 		Cell* cell = map->FindOpen(1.0f);
@@ -125,7 +125,7 @@ namespace rat
 
 				while (!is_valid)
 				{
-					wanderTarget = Coord{ Random::GetGenerator()->Next(-10, 11), Random::GetGenerator()->Next(-10, 11), 0 } + m_Position;
+					wanderTarget = Coord{ random::RandomEngine::GetGenerator()->NextInt(-10, 11), random::RandomEngine::GetGenerator()->NextInt(-10, 11), 0 } + m_Position;
 					is_valid = !ptr_Parent->GetCell(wanderTarget)->IsSolid();
 				}
 
@@ -287,8 +287,8 @@ namespace rat
 	{
 		if (what == nullptr) return;
 
-		float randomizedAccuracy(math::clamp(m_Accuracy * Random::Generator->NextFloat(0.5f, 1.5f), 0.0f, 3.0f));
-		float randomizedDamage(math::clamp(m_Damage * Random::Generator->NextFloat(0.75f, 1.25f), 0.0f, INFINITY));
+		float randomizedAccuracy(math::clamp(m_Accuracy * random::RandomEngine::GetGenerator()->NextFloat(0.5f, 1.5f), 0.0f, 3.0f));
+		float randomizedDamage(math::clamp(m_Damage * random::RandomEngine::GetGenerator()->NextFloat(0.75f, 1.25f), 0.0f, INFINITY));
 
 		if (this->GetName() == "Jenkins" || what->GetName() == "Jenkins")
 		{
@@ -315,7 +315,7 @@ namespace rat
 
 		double angle = math::rad_to_deg * std::atan2(direction.Y, direction.X);
 
-		float randomizedDodge(math::clamp(m_Dodge * Random::Generator->NextFloat(0.15f, 1.15f), 0.0f, 1.0f));
+		float randomizedDodge(math::clamp(m_Dodge * random::RandomEngine::GetGenerator()->NextFloat(0.15f, 1.15f), 0.0f, 1.0f));
 
 		bool crit(false);
 
@@ -356,12 +356,12 @@ namespace rat
 
 				for (int i = 0; i < bloodParticles; i++)
 				{
-					double spatterDistance = Random::GetGenerator()->NextDouble(0.1, 1.0);
+					double spatterDistance = random::RandomEngine::GetGenerator()->NextDouble(0.1, 1.0);
 
 					Coord spatterPos
 					{
-						static_cast<coord_t>(spatterDistance * (double)Random::GetGenerator()->Next(direction.X, direction.X * 4)) + m_Position.X,
-						static_cast<coord_t>(spatterDistance * (double)Random::GetGenerator()->Next(direction.Y, direction.Y * 4)) + m_Position.Y,
+						static_cast<coord_t>(spatterDistance * (double)random::RandomEngine::GetGenerator()->NextInt(direction.X, direction.X * 4)) + m_Position.X,
+						static_cast<coord_t>(spatterDistance * (double)random::RandomEngine::GetGenerator()->NextInt(direction.Y, direction.Y * 4)) + m_Position.Y,
 						m_Position.Z
 					};
 

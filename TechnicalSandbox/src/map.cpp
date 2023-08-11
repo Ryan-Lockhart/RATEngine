@@ -2,7 +2,7 @@
 #include "map.hpp"
 #include "cell.hpp"
 #include "actor.hpp"
-#include "mt_engine.hpp"
+#include "random_engine.hpp"
 #include "glyph_set.hpp"
 #include "math.hpp"
 
@@ -138,7 +138,7 @@ namespace rat
 				{
 					Coord coord{ x, y, z };
 
-					m_Solids->at(Index(coord)) = WithinBounds(coord) ? Random::Generator->NextBool(fillPercent) : true;
+					m_Solids->at(Index(coord)) = WithinBounds(coord) ? random::RandomEngine::GetGenerator()->NextBool(fillPercent) : true;
 				}
 	}
 
@@ -242,9 +242,9 @@ namespace rat
 
 		while (checks < maxChecks)
 		{
-			int64_t x(Random::Generator->Next(0, m_Bounds.Width - 1));
-			int64_t y(Random::Generator->Next(0, m_Bounds.Height - 1));
-			int64_t z(Random::Generator->Next(0, m_Bounds.Depth - 1));
+			int64_t x(random::RandomEngine::GetGenerator()->NextInt(0, m_Bounds.Width - 1));
+			int64_t y(random::RandomEngine::GetGenerator()->NextInt(0, m_Bounds.Height - 1));
+			int64_t z(m_Bounds.Depth == 1 ? 0 : random::RandomEngine::GetGenerator()->NextInt(0,  - 1));
 
 			Coord randomPos{ x, y, z };
 
